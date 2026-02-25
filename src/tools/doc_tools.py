@@ -9,9 +9,9 @@ from typing import List, Dict, Any, Optional, Tuple
 import logging
 import re
 
-from langchain.document_loader import DocumentLoader
-from langchain.pipeline import DocumentPipeline
-from langchain.datamodel import Document
+from docling.document_loader import DocumentLoader
+from docling.pipeline import DocumentPipeline
+from docling.datamodel import Document
 import PyPDF2
 from PIL import Image
 import io
@@ -42,7 +42,7 @@ class DocAnalyst:
             self.doc = loader.load(pdf_path)
             
             # Process with pipeline
-            pipeline = DocumentPipeline()
+            pipeline = DocumentPipeline() 
             self.doc = pipeline.process(self.doc)
             
             # Extract text chunks
