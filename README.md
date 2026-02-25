@@ -44,15 +44,24 @@ pip install -r requirements.txt
 `------------------- configure environmental variable(.env) -------------------`
 #this process dependes on the provider we use 
 # Required
-OPENAI_API_KEY=your_openai_api_key_here
+GEMINAI_API_KEY=geminaiapi
+ 
 
-# Optional for Claude
-ANTHROPIC_API_KEY=your_anthropic_api_key_here
-
-# Optional for tracing
+# LangSmith Configuration
 LANGCHAIN_TRACING_V2=true
-LANGCHAIN_API_KEY=your_langsmith_api_key_here
+LANGCHAIN_ENDPOINT="https://api.smith.langchain.com"
+LANGCHAIN_API_KEY=langchainapi
 LANGCHAIN_PROJECT=automaton-auditor
+
+# Default Model Configuration
+DEFAULT_LLM_MODEL=gemini-3-pro-preview
+VISION_LLM_MODEL=gemini-2.5-flash-image
+
+# Temporary Directory for Cloning
+TEMP_DIR=/tmp/automaton-auditor
+
+# Logging Level
+LOG_LEVEL=INFO
 
 
 
