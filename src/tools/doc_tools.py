@@ -9,9 +9,9 @@ from typing import List, Dict, Any, Optional, Tuple
 import logging
 import re
 
-from docling.document_loader import DocumentLoader
-from docling.pipeline import DocumentPipeline
-from docling.datamodel import Document
+from langchain.document_loader import DocumentLoader
+from langchain.pipeline import DocumentPipeline
+from langchain.datamodel import Document
 import PyPDF2
 from PIL import Image
 import io
