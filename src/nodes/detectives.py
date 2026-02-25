@@ -29,10 +29,10 @@ class DetectiveNodes:
         self.vision_inspector = None
         
         # Initialize vision if API key available
-        if "openai" in api_keys:
+        if "geminai" in api_keys:
             self.vision_inspector = VisionInspector(
-                api_key=api_keys["openai"],
-                model=api_keys.get("vision_model", "gpt-4-vision-preview")
+                api_key=api_keys["geminai"],
+                model=api_keys.get("vision_model", "gemini-2.5-flash-image")
             )
     
     def initialize_investigators(self, state: AgentState) -> Dict:

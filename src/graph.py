@@ -32,15 +32,13 @@ class AutomatonAuditor:
     """Main orchestrator for the Automaton Auditor swarm"""
     
     def __init__(self, 
-                 openai_api_key: Optional[str] = None,
-                 anthropic_api_key: Optional[str] = None,
+                 geminai_api_key: Optional[str] = None,
                  langsmith_api_key: Optional[str] = None,
-                 model: str = "gpt-4-turbo-preview"):
+                 model: str = "gemini-2.5-flash-image"):
         
         # API keys
         self.api_keys = {
-            "openai": openai_api_key or os.getenv("OPENAI_API_KEY"),
-            "anthropic": anthropic_api_key or os.getenv("ANTHROPIC_API_KEY"),
+            "geminai": geminai_api_key or os.getenv("GEMINAI_API_KEY"),
             "langsmith": langsmith_api_key or os.getenv("LANGSMITH_API_KEY")
         }
         
