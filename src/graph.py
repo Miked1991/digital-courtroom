@@ -1,239 +1,275 @@
 """
-Main LangGraph definition for the Automaton Auditor
-Hierarchical state graph with parallel execution
+Main LangGraph definition for the Automaton Auditor swarm.
+Orchestrates parallel detective work and dialectical judgment.
 """
 
-import os
-import logging
-from typing import Dict, Any, Optional
+from typing import Literal
 from datetime import datetime
+import json
 from pathlib import Path
+import logging
 
-from dotenv import load_dotenv
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint import MemorySaver
-from langchain_core.runnables import RunnableConfig
 
-from .state import AgentState
-from .nodes.detectives import DetectiveNodes
+from .state import AgentState, RubricDimension
+from .nodes.detectives import DetectiveNodes, EvidenceAggregator
 from .nodes.judges import JudgeNodes
 from .nodes.justice import ChiefJusticeNode
 from .utils.context_builder import ContextBuilder
 
-# Load environment variables
-load_dotenv()
-
-# Configure logging
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
 class AutomatonAuditor:
-    """Main orchestrator for the Automaton Auditor swarm"""
+    """Main orchestrator for the Automaton Auditor swarm."""
     
-    def __init__(self, 
-                 geminai_api_key: Optional[str] = None,
-                 langsmith_api_key: Optional[str] = None,
-                 model: str = "gemini-2.5-flash-image"):
+    def __init__(self, rubric_path: str = "rubric/week2_rubric.json"):
+        """
+        Initialize the Automaton Auditor with rubric.
         
-        # API keys
-        self.api_keys = {
-            "geminai": geminai_api_key or os.getenv("GEMINAI_API_KEY"),
-            "langsmith": langsmith_api_key or os.getenv("LANGSMITH_API_KEY")
-        }
+        Args:
+            rubric_path: Path to rubric JSON file
+        """
+        self.rubric_path = rubric_path
+        self.rubric_data = self._load_rubric()
+        self.detectives = DetectiveNodes()
+        self.evidence_aggregator = EvidenceAggregator()
+        self.judges = JudgeNodes()
+        self.chief_justice = ChiefJusticeNode()
+        self.context_builder = ContextBuilder()
         
-        # Configure LangSmith
-        if self.api_keys["langsmith"]:
-            os.environ["LANGCHAIN_TRACING_V2"] = "true"
-            os.environ["LANGCHAIN_API_KEY"] = self.api_keys["langsmith"]
-            os.environ["LANGCHAIN_PROJECT"] = os.getenv("LANGCHAIN_PROJECT", "automaton-auditor")
-        
-        self.model = model
-        self.graph = None
-        self.app = None
-        
-        # Initialize nodes
-        self.detectives = DetectiveNodes(self.api_keys)
-        self.judges = JudgeNodes(self.api_keys, model)
-        self.chief_justice = ChiefJusticeNode(self.api_keys, model)
-        
-        # Build graph
-        self._build_graph()
+        # Build the graph
+        self.graph = self._build_graph()
     
-    def _build_graph(self):
-        """Build the LangGraph state graph"""
+    def _load_rubric(self) -> dict:
+        """Load rubric from JSON file."""
+        try:
+            with open(self.rubric_path, 'r') as f:
+                return json.load(f)
+        except Exception as e:
+            logger.error(f"Error loading rubric: {e}")
+            # Fallback to embedded rubric
+            return {
+                "dimensions": [
+                    {
+                        "id": "forensic_accuracy_code",
+                        "name": "Forensic Accuracy (Codebase)",
+                        "target_artifact": "github_repo",
+                        "forensic_instruction": "Verify Pydantic state models and sandboxed tools",
+                        "judicial_logic": {
+                            "prosecutor": "Check for security negligence",
+                            "defense": "Highlight creative AST parsing",
+                            "tech_lead": "Assess state reducers"
+                        }
+                    },
+                    {
+                        "id": "forensic_accuracy_docs",
+                        "name": "Forensic Accuracy (Documentation)",
+                        "target_artifact": "pdf_report",
+                        "forensic_instruction": "Verify theoretical depth and cross-reference claims",
+                        "judicial_logic": {
+                            "prosecutor": "Charge hallucination if claims mismatch code",
+                            "defense": "Identify theoretical alignment",
+                            "tech_lead": "Verify architectural notes"
+                        }
+                    },
+                    {
+                        "id": "judicial_nuance",
+                        "name": "Judicial Nuance & Dialectics",
+                        "target_artifact": "github_repo",
+                        "forensic_instruction": "Verify distinct judge personas and structured output",
+                        "judicial_logic": {
+                            "prosecutor": "Check for persona collusion",
+                            "defense": "Look for forgiving instructions",
+                            "tech_lead": "Evaluate rubric mapping"
+                        }
+                    },
+                    {
+                        "id": "langgraph_architecture",
+                        "name": "LangGraph Orchestration Rigor",
+                        "target_artifact": "github_repo",
+                        "forensic_instruction": "Verify parallel branches and conditional edges",
+                        "judicial_logic": {
+                            "prosecutor": "Charge orchestration fraud if linear",
+                            "defense": "Support simple but valid graphs",
+                            "tech_lead": "Check fan-in synchronization"
+                        }
+                    }
+                ],
+                "synthesis_rules": {
+                    "security_override": "Confirmed security flaws cap total score at 3",
+                    "fact_supremacy": "Forensic evidence overrules judicial opinion",
+                    "dissent_requirement": "Summarize prosecutor-defense disagreement"
+                }
+            }
+    
+    def _build_graph(self) -> StateGraph:
+        """
+        Build the LangGraph with parallel execution paths.
         
-        # Initialize graph
-        workflow = StateGraph(AgentState)
+        Returns:
+            Compiled StateGraph
+        """
+        # Initialize graph with state schema
+        builder = StateGraph(AgentState)
         
         # Add nodes
+        builder.add_node("repo_investigator", self.detectives.repo_investigator_node)
+        builder.add_node("doc_analyst", self.detectives.doc_analyst_node)
+        builder.add_node("vision_inspector", self.detectives.vision_inspector_node)
+        builder.add_node("evidence_aggregator", self.evidence_aggregator)
+        builder.add_node("prosecutor", self.judges.prosecutor_node)
+        builder.add_node("defense", self.judges.defense_node)
+        builder.add_node("tech_lead", self.judges.tech_lead_node)
+        builder.add_node("chief_justice", self.chief_justice)
         
-        # Detective layer nodes (parallel)
-        workflow.add_node("initialize_investigators", self.detectives.initialize_investigators)
-        workflow.add_node("repo_investigator", self.detectives.repo_investigator_node)
-        workflow.add_node("doc_analyst", self.detectives.doc_analyst_node)
-        workflow.add_node("vision_inspector", self.detectives.vision_inspector_node)
-        workflow.add_node("evidence_aggregator", self.detectives.evidence_aggregator_node)
+        # Set entry point
+        builder.set_entry_point("repo_investigator")
         
-        # Judicial layer nodes (parallel)
-        workflow.add_node("prosecutor", self.judges.prosecutor_node)
-        workflow.add_node("defense", self.judges.defense_node)
-        workflow.add_node("tech_lead", self.judges.tech_lead_node)
+        # Add parallel detective edges
+        builder.add_edge("repo_investigator", "evidence_aggregator")
+        builder.add_edge("doc_analyst", "evidence_aggregator")
+        builder.add_edge("vision_inspector", "evidence_aggregator")
         
-        # Supreme court node
-        workflow.add_node("chief_justice", self.chief_justice.synthesize_verdict)
+        # Fan-out to judges after evidence aggregation
+        builder.add_edge("evidence_aggregator", "prosecutor")
+        builder.add_edge("evidence_aggregator", "defense")
+        builder.add_edge("evidence_aggregator", "tech_lead")
         
-        # Define edges
+        # Fan-in to chief justice
+        builder.add_edge("prosecutor", "chief_justice")
+        builder.add_edge("defense", "chief_justice")
+        builder.add_edge("tech_lead", "chief_justice")
         
-        # Start -> Initialize
-        workflow.set_entry_point("initialize_investigators")
+        # End after chief justice
+        builder.add_edge("chief_justice", END)
         
-        # Initialize -> Parallel detectives
-        workflow.add_edge("initialize_investigators", "repo_investigator")
-        workflow.add_edge("initialize_investigators", "doc_analyst")
-        workflow.add_edge("initialize_investigators", "vision_inspector")
-        
-        # Detectives -> Aggregator (fan-in)
-        workflow.add_edge("repo_investigator", "evidence_aggregator")
-        workflow.add_edge("doc_analyst", "evidence_aggregator")
-        workflow.add_edge("vision_inspector", "evidence_aggregator")
-        
-        # Aggregator -> Parallel judges (fan-out)
-        workflow.add_edge("evidence_aggregator", "prosecutor")
-        workflow.add_edge("evidence_aggregator", "defense")
-        workflow.add_edge("evidence_aggregator", "tech_lead")
-        
-        # Judges -> Chief Justice (fan-in)
-        workflow.add_edge("prosecutor", "chief_justice")
-        workflow.add_edge("defense", "chief_justice")
-        workflow.add_edge("tech_lead", "chief_justice")
-        
-        # Chief Justice -> End
-        workflow.add_edge("chief_justice", END)
-        
-        # Add conditional edges for error handling
-        workflow.add_conditional_edges(
+        # Add conditional routing for error handling
+        builder.add_conditional_edges(
             "repo_investigator",
-            self._check_errors,
+            self._check_critical_errors,
             {
                 "continue": "evidence_aggregator",
-                "error": END
+                "abort": END
             }
         )
         
-        # Compile graph
-        self.graph = workflow.compile(checkpointer=MemorySaver())
-        self.app = workflow.compile()
-        
-        logger.info("Graph built successfully")
+        # Compile with memory saver for checkpointing
+        memory = MemorySaver()
+        return builder.compile(checkpointer=memory)
     
-    def _check_errors(self, state: AgentState) -> str:
-        """Check for errors in detective nodes"""
-        if state.get("warnings") and len(state["warnings"]) > 5:
-            logger.error("Too many errors, aborting")
-            return "error"
+    def _check_critical_errors(self, state: AgentState) -> Literal["continue", "abort"]:
+        """
+        Check for critical errors that should abort the audit.
+        
+        Args:
+            state: Current agent state
+            
+        Returns:
+            Routing decision
+        """
+        errors = state.get("errors", [])
+        
+        # Check for fatal errors
+        fatal_patterns = [
+            "clone failed",
+            "invalid repository",
+            "PDF not found"
+        ]
+        
+        for error in errors:
+            for pattern in fatal_patterns:
+                if pattern in error.lower():
+                    logger.warning(f"Fatal error detected: {error}")
+                    return "abort"
+        
         return "continue"
     
-    async def audit(self, 
-                   repo_url: str, 
-                   pdf_path: str, 
-                   rubric_path: str,
-                   config: Optional[RunnableConfig] = None) -> AgentState:
+    def prepare_initial_state(self, repo_url: str, pdf_path: str) -> AgentState:
         """
-        Run complete audit on a repository
+        Prepare initial state for the audit.
         
         Args:
             repo_url: GitHub repository URL
             pdf_path: Path to PDF report
-            rubric_path: Path to rubric JSON
-            config: Optional LangGraph config
-        
+            
         Returns:
-            Final state with audit report
+            Initial agent state
         """
+        # Convert rubric dimensions to Pydantic models
+        dimensions = [
+            RubricDimension(**dim) 
+            for dim in self.rubric_data.get("dimensions", [])
+        ]
         
-        # Initial state
-        initial_state = {
+        return {
             "repo_url": repo_url,
             "pdf_path": pdf_path,
-            "rubric_path": rubric_path,
+            "rubric_data": self.rubric_data,
+            "rubric_dimensions": dimensions,
             "evidences": {},
             "opinions": [],
             "aggregated_evidence": {},
-            "criterion_scores": {},
             "final_report": "",
-            "remediation_plan": [],
-            "warnings": [],
+            "synthesis_notes": "",
             "errors": [],
-            "execution_time": None
+            "warnings": [],
+            "processing_started": datetime.now(),
+            "processing_completed": None
+        }
+    
+    async def run_audit(self, repo_url: str, pdf_path: str, thread_id: str = "default") -> AgentState:
+        """
+        Run a complete audit on a repository.
+        
+        Args:
+            repo_url: GitHub repository URL
+            pdf_path: Path to PDF report
+            thread_id: Thread ID for checkpointing
+            
+        Returns:
+            Final agent state with audit report
+        """
+        logger.info(f"Starting audit for {repo_url}")
+        
+        # Prepare initial state
+        initial_state = self.prepare_initial_state(repo_url, pdf_path)
+        
+        # Configure run
+        config = {
+            "configurable": {
+                "thread_id": thread_id
+            }
         }
         
-        start_time = datetime.now()
-        
+        # Run the graph
         try:
-            # Run graph
-            final_state = await self.app.ainvoke(initial_state, config=config)
-            
-            # Add execution time
-            execution_time = (datetime.now() - start_time).total_seconds()
-            final_state["execution_time"] = execution_time
-            
-            # Add trace URL if LangSmith enabled
-            if self.api_keys["langsmith"]:
-                # In production, you'd get the actual run URL
-                final_state["trace_url"] = "https://smith.langchain.com/public/example"
-            
+            final_state = await self.graph.ainvoke(initial_state, config)
+            logger.info("Audit completed successfully")
             return final_state
-            
         except Exception as e:
             logger.error(f"Audit failed: {e}")
-            return {
-                **initial_state,
-                "errors": [str(e)],
-                "final_report": f"# Audit Failed\n\nError: {str(e)}"
-            }
-        finally:
-            # Cleanup
-            self.detectives.cleanup()
+            initial_state["errors"].append(f"Audit failed: {str(e)}")
+            initial_state["final_report"] = f"# Audit Failed\n\nError: {str(e)}"
+            return initial_state
     
-    def get_graph_diagram(self) -> str:
-        """Get Mermaid diagram of the graph"""
-        if self.graph:
-            return self.graph.get_graph().draw_mermaid()
-        return "Graph not built"
-
-
-# CLI entry point
-async def main():
-    """Command line interface"""
-    import argparse
-    import asyncio
-    
-    parser = argparse.ArgumentParser(description="Automaton Auditor")
-    parser.add_argument("--repo", required=True, help="GitHub repository URL")
-    parser.add_argument("--pdf", required=True, help="Path to PDF report")
-    parser.add_argument("--rubric", default="rubric/week2_rubric.json", help="Path to rubric JSON")
-    parser.add_argument("--output", default="audit/report_onself_generated", help="Output directory")
-    
-    args = parser.parse_args()
-    
-    # Initialize auditor
-    auditor = AutomatonAuditor()
-    
-    # Run audit
-    result = await auditor.audit(args.repo, args.pdf, args.rubric)
-    
-    # Save report
-    output_path = Path(args.output)
-    output_path.mkdir(parents=True, exist_ok=True)
-    
-    report_file = output_path / f"audit_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md"
-    with open(report_file, 'w') as f:
-        f.write(result["final_report"])
-    
-    print(f"Audit complete. Report saved to {report_file}")
-    print(f"Overall score: {result.get('criterion_scores', {}).get('final_score', 'N/A')}")
-
-
-if __name__ == "__main__":
-    asyncio.run(main())
+    def save_report(self, state: AgentState, output_path: str):
+        """
+        Save final report to file.
+        
+        Args:
+            state: Final agent state
+            output_path: Path to save report
+        """
+        try:
+            output_dir = Path(output_path).parent
+            output_dir.mkdir(parents=True, exist_ok=True)
+            
+            with open(output_path, 'w') as f:
+                f.write(state["final_report"])
+            
+            logger.info(f"Report saved to {output_path}")
+            
+        except Exception as e:
+            logger.error(f"Error saving report: {e}")

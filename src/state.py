@@ -1,96 +1,104 @@
-"""
-State Management for the Automaton Auditor
-Pydantic models with proper reducers for parallel execution
+ """
+Production-grade state management using Pydantic models.
+Enforces strict typing and proper state reduction for parallel execution.
 """
 
-import operator
-from typing import Annotated, Dict, List, Literal, Optional, Any, TypedDict
-from datetime import datetime
+from typing import Annotated, Dict, List, Literal, Optional, Any
+from typing_extensions import TypedDict
 from pydantic import BaseModel, Field, ConfigDict
+import operator
+from datetime import datetime
 
 
 class Evidence(BaseModel):
-    """Forensic evidence collected by detective agents"""
-    model_config = ConfigDict(extra='forbid')
+    """Forensic evidence collected by detective agents."""
     
-    goal: str = Field(description="The forensic goal this evidence addresses")
+    model_config = ConfigDict(extra="forbid")  # Prevent arbitrary fields
+    
+    goal: str = Field(description="The specific forensic goal this evidence addresses")
     found: bool = Field(description="Whether the artifact exists")
     content: Optional[str] = Field(default=None, description="Extracted content or snippet")
     location: str = Field(description="File path, commit hash, or page number")
-    rationale: str = Field(description="Reasoning for confidence level")
+    rationale: str = Field(description="Reasoning for confidence level in this evidence")
     confidence: float = Field(ge=0.0, le=1.0, description="Confidence score 0-1")
-    timestamp: datetime = Field(default_factory=datetime.now)
-    artifact_type: Literal["code", "doc", "image", "git"] = Field(description="Type of evidence")
+    collected_at: datetime = Field(default_factory=datetime.now)
+    artifact_type: Literal["code", "documentation", "diagram", "git_history"] = Field(
+        description="Type of artifact examined"
+    )
 
 
 class JudicialOpinion(BaseModel):
-    """Opinion from a judge in the dialectical bench"""
-    model_config = ConfigDict(extra='forbid')
+    """Structured output from judge agents with persona-specific perspectives."""
     
-    judge: Literal["Prosecutor", "Defense", "TechLead"]
-    criterion_id: str
-    score: int = Field(ge=1, le=5)
-    argument: str
-    cited_evidence: List[str] = Field(default_factory=list)
-    timestamp: datetime = Field(default_factory=datetime.now)
-    confidence: float = Field(ge=0.0, le=1.0, default=0.9)
+    model_config = ConfigDict(extra="forbid")
+    
+    judge: Literal["Prosecutor", "Defense", "TechLead"] = Field(
+        description="Which persona rendered this opinion"
+    )
+    criterion_id: str = Field(description="ID of the rubric criterion being judged")
+    score: int = Field(ge=1, le=5, description="Score 1-5 based on persona's lens")
+    argument: str = Field(description="Detailed reasoning for the score")
+    cited_evidence: List[str] = Field(
+        description="List of evidence IDs or locations supporting this opinion"
+    )
+    dissent_notes: Optional[str] = Field(
+        default=None, 
+        description="Points of disagreement with other judges"
+    )
 
 
 class RubricDimension(BaseModel):
-    """Rubric dimension from the constitution"""
-    model_config = ConfigDict(extra='forbid')
+    """Machine-readable rubric dimension."""
+    
+    model_config = ConfigDict(extra="forbid")
     
     id: str
     name: str
-    target_artifact: Literal["github_repo", "pdf_report", "both"]
+    target_artifact: Literal["github_repo", "pdf_report"]
     forensic_instruction: str
     judicial_logic: Dict[str, str]
 
 
-class SynthesisRule(BaseModel):
-    """Rules for the Chief Justice synthesis"""
-    security_override: str
-    fact_supremacy: str
-    dissent_requirement: str
-
-
 class AgentState(TypedDict):
-    """Main state graph state with proper reducers"""
+    """
+    Central state for the Automaton Auditor swarm.
+    Uses reducers to prevent data overwriting during parallel execution.
+    """
     
-    # Input
+    # Inputs
     repo_url: str
     pdf_path: str
-    rubric_path: str
+    rubric_data: Dict[str, Any]
     
-    # Configuration
+    # Processed rubric dimensions
     rubric_dimensions: List[RubricDimension]
-    synthesis_rules: Optional[SynthesisRule]
     
-    # Evidence Collection - Using reducer to merge from parallel detectives
+    # Evidence collection (uses ior reducer to merge dicts from parallel detectives)
     evidences: Annotated[Dict[str, List[Evidence]], operator.ior]
     
-    # Judicial Opinions - Using add reducer to accumulate from parallel judges
+    # Judicial opinions (uses add reducer to append from parallel judges)
     opinions: Annotated[List[JudicialOpinion], operator.add]
     
-    # Aggregated State
-    aggregated_evidence: Optional[Dict[str, Any]]
-    criterion_scores: Annotated[Dict[str, Dict[str, Any]], operator.ior]
+    # Aggregated data
+    aggregated_evidence: Dict[str, Any]
     
-    # Output
+    # Final outputs
     final_report: str
-    remediation_plan: List[str]
+    synthesis_notes: str
     
-    # Metadata
-    errors: List[str]
-    warnings: List[str]
-    trace_url: Optional[str]
-    execution_time: Optional[float]
+    # Error tracking
+    errors: Annotated[List[str], operator.add]
+    warnings: Annotated[List[str], operator.add]
+    
+    # Processing metadata
+    processing_started: datetime
+    processing_completed: Optional[datetime]
 
 
-class EvidenceAggregation(BaseModel):
-    """Structured aggregation of evidence for judges"""
-    criterion_id: str
-    evidence_list: List[Evidence]
-    summary: str
-    contradictions: List[str]
-    confidence: float
+class SynthesisRule(BaseModel):
+    """Rules for the Chief Justice to resolve dialectical conflicts."""
+    
+    name: str
+    condition: str
+    override_behavior: Dict[str, Any]
+    priority: int

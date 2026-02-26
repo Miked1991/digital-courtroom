@@ -1,240 +1,266 @@
 """
-Judicial layer nodes - dialectical bench with three personas
-Parallel execution of Prosecutor, Defense, and Tech Lead
+Judicial layer nodes for dialectical analysis.
+Each judge applies a distinct persona to evaluate evidence.
 """
 
-import logging
+from typing import Dict, List, Any
 import json
-from typing import Dict, List, Any, Optional
-from datetime import datetime
+import logging
+import google.generativeai as genai
+from dotenv import load_dotenv
+import os
 
-from langchain_openai import ChatOpenAI
-from langchain_anthropic import ChatAnthropic
-from langchain_core.messages import SystemMessage, HumanMessage
-from langchain_core.runnables import RunnableConfig
+from ..state import AgentState, JudicialOpinion, RubricDimension
 
-from ..state import AgentState, JudicialOpinion, EvidenceAggregation
-from ..utils.context_builder import ContextBuilder
-
+load_dotenv()
 logger = logging.getLogger(__name__)
 
 
 class JudgeNodes:
-    """Judicial layer nodes with dialectical personas"""
+    """Nodes for the Judicial layer - persona-based evaluation."""
     
-    def __init__(self, api_keys: Dict[str, str], model: str = "gpt-4-turbo-preview"):
-        self.api_keys = api_keys
-        self.model = model
-        self.llm = None
-        self.context_builder = None
+    def __init__(self, gemini_model: str = "gemini-1.5-pro"):
+        """Initialize judges with Gemini model."""
+        self.gemini_model = gemini_model
+        self.api_key = os.getenv("GEMINI_API_KEY")
         
-        # Initialize LLM
-        if "openai" in api_keys:
-            self.llm = ChatOpenAI(
-                api_key=api_keys["openai"],
-                model=model,
-                temperature=0.3  # Low temperature for consistency
+        if not self.api_key:
+            raise ValueError("GEMINI_API_KEY environment variable not set")
+        
+        genai.configure(api_key=self.api_key)
+        self.model = genai.GenerativeModel(gemini_model)
+    
+    def _create_judge_prompt(
+        self, 
+        persona: str, 
+        rubric_dimension: RubricDimension,
+        evidence: Dict[str, Any]
+    ) -> str:
+        """
+        Create persona-specific judge prompt.
+        
+        Args:
+            persona: Judge persona (Prosecutor/Defense/TechLead)
+            rubric_dimension: Rubric dimension being judged
+            evidence: Collected evidence for this dimension
+            
+        Returns:
+            Formatted prompt string
+        """
+        base_prompt = f"""
+        You are acting as the {persona} in a Digital Courtroom for code audit.
+        
+        Your Core Philosophy:
+        {self._get_persona_philosophy(persona)}
+        
+        Rubric Dimension: {rubric_dimension.name}
+        ID: {rubric_dimension.id}
+        
+        Judicial Logic for {persona}:
+        {rubric_dimension.judicial_logic.get(persona.lower(), "Apply standard judgment")}
+        
+        Evidence to evaluate:
+        {json.dumps(evidence, indent=2, default=str)}
+        
+        Your task:
+        1. Analyze the evidence through your persona's lens
+        2. Assign a score from 1-5 based on the rubric standards
+        3. Provide detailed reasoning for your score
+        4. Cite specific evidence supporting your opinion
+        5. Note any points of disagreement you anticipate with other judges
+        
+        You MUST return your opinion as a valid JSON object with exactly these fields:
+        - judge: "{persona}"
+        - criterion_id: "{rubric_dimension.id}"
+        - score: integer between 1 and 5
+        - argument: detailed string explaining your reasoning
+        - cited_evidence: list of strings referencing evidence locations
+        - dissent_notes: optional string noting anticipated disagreements
+        
+        Ensure your response contains ONLY the JSON object, no additional text.
+        """
+        
+        return base_prompt
+    
+    def _get_persona_philosophy(self, persona: str) -> str:
+        """Get core philosophy for each persona."""
+        philosophies = {
+            "Prosecutor": """
+                "Trust No One. Assume Vibe Coding."
+                Scrutinize evidence for gaps, security flaws, and laziness.
+                Look specifically for bypassed structure and hallucination liability.
+                Be harsh but fair - your job is to find what's missing.
+            """,
+            "Defense": """
+                "Reward Effort and Intent. Look for the Spirit of the Law."
+                Highlight creative workarounds, deep thought, and effort.
+                Consider the engineering process and learning journey.
+                Be generous but honest - your job is to see potential.
+            """,
+            "TechLead": """
+                "Does it actually work? Is it maintainable?"
+                Evaluate architectural soundness, code cleanliness, and practical viability.
+                Ignore the vibe and the struggle. Focus on the artifacts.
+                Be pragmatic - your job is to assess technical debt.
+            """
+        }
+        return philosophies.get(persona, "Apply balanced judgment.")
+    
+    def _parse_judicial_response(self, response_text: str, persona: str, criterion_id: str) -> JudicialOpinion:
+        """
+        Parse and validate judge response into structured opinion.
+        
+        Args:
+            response_text: Raw response from Gemini
+            persona: Judge persona
+            criterion_id: Rubric criterion ID
+            
+        Returns:
+            Structured JudicialOpinion
+        """
+        try:
+            # Extract JSON from response
+            start_idx = response_text.find('{')
+            end_idx = response_text.rfind('}') + 1
+            
+            if start_idx >= 0 and end_idx > start_idx:
+                json_str = response_text[start_idx:end_idx]
+                data = json.loads(json_str)
+            else:
+                # Fallback if no JSON found
+                data = {
+                    "judge": persona,
+                    "criterion_id": criterion_id,
+                    "score": 3,
+                    "argument": response_text[:500],
+                    "cited_evidence": []
+                }
+            
+            # Ensure required fields
+            opinion = JudicialOpinion(
+                judge=persona,
+                criterion_id=data.get("criterion_id", criterion_id),
+                score=int(data.get("score", 3)),
+                argument=data.get("argument", "No argument provided"),
+                cited_evidence=data.get("cited_evidence", []),
+                dissent_notes=data.get("dissent_notes")
             )
-        elif "anthropic" in api_keys:
-            self.llm = ChatAnthropic(
-                api_key=api_keys["anthropic"],
-                model="claude-3-opus-20240229",
-                temperature=0.3
+            
+            return opinion
+            
+        except Exception as e:
+            logger.error(f"Error parsing judge response: {e}")
+            # Return default opinion on error
+            return JudicialOpinion(
+                judge=persona,
+                criterion_id=criterion_id,
+                score=3,
+                argument=f"Error parsing response: {str(e)}",
+                cited_evidence=[]
             )
     
-    def _ensure_context_builder(self, state: AgentState):
-        """Ensure context builder is initialized"""
-        if not self.context_builder and "rubric_path" in state:
-            self.context_builder = ContextBuilder(state["rubric_path"])
+    def prosecutor_node(self, state: AgentState) -> Dict[str, Any]:
+        """
+        Prosecutor judge node - critical lens.
+        
+        Args:
+            state: Current agent state
+            
+        Returns:
+            Updated state with prosecutor opinions
+        """
+        logger.info("Running Prosecutor node")
+        return self._judge_dimensions(state, "Prosecutor")
     
-    async def prosecutor_node(self, state: AgentState, config: RunnableConfig) -> Dict:
+    def defense_node(self, state: AgentState) -> Dict[str, Any]:
         """
-        Prosecutor persona - critical lens
-        Thesis in dialectical process
+        Defense judge node - optimistic lens.
+        
+        Args:
+            state: Current agent state
+            
+        Returns:
+            Updated state with defense opinions
         """
-        return await self._judge_node(state, "Prosecutor")
+        logger.info("Running Defense node")
+        return self._judge_dimensions(state, "Defense")
     
-    async def defense_node(self, state: AgentState, config: RunnableConfig) -> Dict:
+    def tech_lead_node(self, state: AgentState) -> Dict[str, Any]:
         """
-        Defense persona - optimistic lens
-        Antithesis in dialectical process
+        Tech Lead judge node - pragmatic lens.
+        
+        Args:
+            state: Current agent state
+            
+        Returns:
+            Updated state with tech lead opinions
         """
-        return await self._judge_node(state, "Defense")
+        logger.info("Running TechLead node")
+        return self._judge_dimensions(state, "TechLead")
     
-    async def tech_lead_node(self, state: AgentState, config: RunnableConfig) -> Dict:
+    def _judge_dimensions(self, state: AgentState, persona: str) -> Dict[str, Any]:
         """
-        Tech Lead persona - pragmatic lens
-        Tie-breaker and technical evaluator
+        Judge all rubric dimensions from a specific persona.
+        
+        Args:
+            state: Current agent state
+            persona: Judge persona
+            
+        Returns:
+            Updated state with opinions
         """
-        return await self._judge_node(state, "TechLead")
-    
-    async def _judge_node(self, state: AgentState, persona: str) -> Dict:
-        """
-        Generic judge node for all personas
-        Processes each criterion independently
-        """
-        logger.info(f"Running {persona} node")
+        opinions = []
         
-        if not self.llm:
-            return {"warnings": state.get("warnings", []) + [f"{persona} LLM not initialized"]}
+        # Get aggregated evidence
+        aggregated = state.get("aggregated_evidence", {})
+        evidence_by_dimension = aggregated.get("evidence_by_dimension", {})
         
-        self._ensure_context_builder(state)
-        
-        if "aggregated_evidence" not in state or not state["aggregated_evidence"]:
-            return {"warnings": state.get("warnings", []) + ["No aggregated evidence available"]}
-        
-        new_opinions = []
-        warnings = state.get("warnings", [])
-        
-        # Process each criterion
-        for criterion_id, agg_data in state["aggregated_evidence"].items():
+        # Judge each dimension
+        for dimension in state["rubric_dimensions"]:
             try:
-                # Get dimension from context builder
-                dimension = None
-                if self.context_builder:
-                    dimension = next(
-                        (d for d in self.context_builder.dimensions if d.id == criterion_id),
-                        None
-                    )
+                # Get evidence for this dimension
+                dim_evidence = evidence_by_dimension.get(dimension.id, [])
                 
-                # Build evidence summary
-                evidence_summary = self._build_evidence_summary(agg_data)
+                # Convert evidence to serializable format
+                evidence_list = []
+                for e in dim_evidence:
+                    if hasattr(e, 'dict'):
+                        evidence_list.append(e.dict())
+                    elif isinstance(e, dict):
+                        evidence_list.append(e)
+                    else:
+                        evidence_list.append(str(e))
                 
-                # Build prompt
-                if self.context_builder and dimension:
-                    prompt = self.context_builder.build_judicial_prompt(
-                        criterion_id, persona, evidence_summary
-                    )
-                else:
-                    prompt = self._build_fallback_prompt(persona, criterion_id, evidence_summary)
-                
-                # Get structured opinion from LLM
-                opinion = await self._get_structured_opinion(
-                    persona, criterion_id, prompt, agg_data["evidence_list"]
+                # Create prompt
+                prompt = self._create_judge_prompt(
+                    persona, 
+                    dimension,
+                    {
+                        "dimension_id": dimension.id,
+                        "dimension_name": dimension.name,
+                        "evidence": evidence_list,
+                        "rubric_logic": dimension.judicial_logic
+                    }
                 )
                 
-                if opinion:
-                    new_opinions.append(opinion)
+                # Get judgment from Gemini
+                response = self.model.generate_content(prompt)
+                
+                # Parse into structured opinion
+                opinion = self._parse_judicial_response(response.text, persona, dimension.id)
+                opinions.append(opinion)
+                
+                logger.info(f"{persona} judged {dimension.id}: score={opinion.score}")
                 
             except Exception as e:
-                logger.error(f"{persona} failed for criterion {criterion_id}: {e}")
-                warnings.append(f"{persona} error on {criterion_id}: {str(e)}")
-        
-        return {
-            "opinions": new_opinions,
-            "warnings": warnings
-        }
-    
-    def _build_evidence_summary(self, agg_data: Dict) -> str:
-        """Build summary of evidence for a criterion"""
-        summary = agg_data.get("summary", "")
-        evidence_list = agg_data.get("evidence_list", [])
-        
-        # Add detailed evidence
-        summary += "\n\nDetailed Evidence:\n"
-        for evidence in evidence_list:
-            summary += f"\n--- {evidence.location} ---\n"
-            summary += f"Found: {evidence.found}\n"
-            summary += f"Confidence: {evidence.confidence}\n"
-            if evidence.content:
-                summary += f"Content: {evidence.content[:300]}...\n"
-        
-        # Add contradictions
-        if agg_data.get("contradictions"):
-            summary += "\nContradictions:\n"
-            for contradiction in agg_data["contradictions"]:
-                summary += f"- {contradiction}\n"
-        
-        return summary
-    
-    def _build_fallback_prompt(self, persona: str, criterion_id: str, evidence_summary: str) -> str:
-        """Build fallback prompt if context builder not available"""
-        base_prompts = {
-            "Prosecutor": f"""You are the PROSECUTOR. Scrutinize this evidence harshly.
-            Look for gaps, flaws, and violations. Score strictly (1-5).""",
-            
-            "Defense": f"""You are the DEFENSE ATTORNEY. Look for effort and understanding.
-            Be generous but honest. Score fairly (1-5).""",
-            
-            "TechLead": f"""You are the TECH LEAD. Evaluate technical soundness and maintainability.
-            Be pragmatic. Score realistically (1-5)."""
-        }
-        
-        return f"""{base_prompts[persona]}
-
-Criterion: {criterion_id}
-
-Evidence Summary:
-{evidence_summary}
-
-Provide a JSON response with:
-- score: integer 1-5
-- argument: detailed reasoning
-- cited_evidence: list of evidence locations cited
-- confidence: float 0-1
-"""
-    
-    async def _get_structured_opinion(self, 
-                                      persona: str, 
-                                      criterion_id: str, 
-                                      prompt: str,
-                                      evidence_list: List) -> Optional[JudicialOpinion]:
-        """Get structured opinion from LLM with retry logic"""
-        try:
-            # Add structured output instructions
-            structured_prompt = prompt + """
-
-Return your response as a valid JSON object with exactly these fields:
-{
-    "score": integer between 1 and 5,
-    "argument": "detailed reasoning string",
-    "cited_evidence": ["location1", "location2"],
-    "confidence": float between 0 and 1
-}"""
-            
-            messages = [
-                SystemMessage(content="You are a judicial AI in a digital courtroom. Return only valid JSON."),
-                HumanMessage(content=structured_prompt)
-            ]
-            
-            response = await self.llm.ainvoke(messages)
-            
-            # Parse JSON response
-            try:
-                # Extract JSON from response
-                content = response.content
-                # Find JSON boundaries
-                start = content.find('{')
-                end = content.rfind('}') + 1
-                if start >= 0 and end > start:
-                    json_str = content[start:end]
-                    result = json.loads(json_str)
-                else:
-                    # Try to parse entire content
-                    result = json.loads(content)
-                
-                # Create opinion
-                return JudicialOpinion(
+                logger.error(f"Error in {persona} judging {dimension.id}: {e}")
+                # Add error opinion
+                opinions.append(JudicialOpinion(
                     judge=persona,
-                    criterion_id=criterion_id,
-                    score=result.get("score", 3),
-                    argument=result.get("argument", "No argument provided"),
-                    cited_evidence=result.get("cited_evidence", []),
-                    confidence=result.get("confidence", 0.7)
-                )
-                
-            except json.JSONDecodeError as e:
-                logger.error(f"Failed to parse LLM response as JSON: {e}")
-                # Return fallback opinion
-                return JudicialOpinion(
-                    judge=persona,
-                    criterion_id=criterion_id,
+                    criterion_id=dimension.id,
                     score=3,
-                    argument=f"Failed to parse structured output: {response.content[:200]}",
-                    cited_evidence=[e.location for e in evidence_list[:2]] if evidence_list else [],
-                    confidence=0.3
-                )
-                
-        except Exception as e:
-            logger.error(f"Failed to get structured opinion: {e}")
-            return None
+                    argument=f"Error during judgment: {str(e)}",
+                    cited_evidence=[]
+                ))
+        
+        return {"opinions": opinions}

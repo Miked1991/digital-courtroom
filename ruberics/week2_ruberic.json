@@ -1,0 +1,58 @@
+{
+  "rubric_metadata": {
+    "rubric_name": "Week 2: The Automaton Auditor Self-Evaluation",
+    "grading_target": "Week 2 Auditor Repository & Architectural Report",
+    "version": "2.0.0"
+  },
+  "dimensions": [
+    {
+      "id": "forensic_accuracy_code",
+      "name": "Forensic Accuracy (Codebase)",
+      "target_artifact": "github_repo",
+      "forensic_instruction": "Trace the repository for production-grade engineering. Verify Pydantic State models in 'src/graph.py' or 'src/state.py'. Check 'src/tools/' for sandboxed 'git clone' operations.",
+      "judicial_logic": {
+        "prosecutor": "If tool execution relies on raw 'os.system' without error handling or sandboxing, charge with 'Security Negligence'. If Pydantic is missing entirely, score max 2.",
+        "defense": "Highlight any creative use of AST parsing to read LangGraph node definitions despite environment constraints.",
+        "tech_lead": "Assess the state reducers. Are 'operator.add' or 'operator.ior' used correctly to prevent data loss during parallel execution?"
+      }
+    },
+    {
+      "id": "forensic_accuracy_docs",
+      "name": "Forensic Accuracy (Documentation)",
+      "target_artifact": "pdf_report",
+      "forensic_instruction": "Scan PDF for theoretical depth. Verify mentions of 'Dialectical Synthesis' and 'Metacognition'. Cross-reference claims made in the PDF (e.g., 'We implemented parallel Judges') with the evidence found by the Code Detective.",
+      "judicial_logic": {
+        "prosecutor": "If the report claims features that are not present in the code, charge with 'Auditor Hallucination'. Score 1.",
+        "defense": "Identify sections where the trainee demonstrates deep alignment with Multi-Agent System theories.",
+        "tech_lead": "Verify if the architectural notes provide enough detail for a third party to recreate the swarm."
+      }
+    },
+    {
+      "id": "judicial_nuance",
+      "name": "Judicial Nuance & Dialectics",
+      "target_artifact": "github_repo",
+      "forensic_instruction": "Scan 'src/nodes/' or prompt templates. Verify that Prosecutor, Defense, and Tech Lead personas have distinct, conflicting system prompts. Check if the graph forces structured JSON output.",
+      "judicial_logic": {
+        "prosecutor": "If the three judges share 90% of the same prompt text, charge with 'Persona Collusion'. Score max 2. If outputs are free text, charge with 'Hallucination Liability'.",
+        "defense": "Look for specific prompt instructions that force the model to be 'contrarian' or 'forgiving'.",
+        "tech_lead": "Evaluate if the judges successfully map their opinions back to specific rubric criteria IDs."
+      }
+    },
+    {
+      "id": "langgraph_architecture",
+      "name": "LangGraph Orchestration Rigor",
+      "target_artifact": "github_repo",
+      "forensic_instruction": "Analyze the StateGraph definition. Verify the use of parallel branches (fan-out) for Judges and Detectives. Check for conditional edges that handle 'Evidence Missing' or 'Node Failure' scenarios.",
+      "judicial_logic": {
+        "prosecutor": "If the graph is purely linear (A->B->C), charge with 'Orchestration Fraud'. Score 1.",
+        "defense": "Support simpler graph designs if they implement robust 'State' transitions and Pydantic validation at every node.",
+        "tech_lead": "Determine if the fan-in synchronization correctly aggregates lists of evidence before passing them to the judicial bench."
+      }
+    }
+  ],
+  "synthesis_rules": {
+    "security_override": "Confirmed security flaws (e.g., shell injection in git tools) cap total score at 3.",
+    "fact_supremacy": "Forensic evidence (facts) always overrules Judicial opinion (interpretation).",
+    "dissent_requirement": "The Chief Justice must summarize why the Prosecutor and Defense disagreed in the final report."
+  }
+}
