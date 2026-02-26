@@ -17,7 +17,7 @@ class VisionForensics:
         self.client = Groq(api_key=api_key or os.getenv('GROQ_API_KEY'))
         
         # Use Gemini 2.0 Flash via Groq for vision
-        self.vision_model = "gemma2-9b-it"  # Groq's vision-capable model
+        self.vision_model = "llama-4-scout-17b-16e-instruct"  # Groq's vision-capable model
     
     def encode_image(self, image_path: str) -> str:
         """Convert image to base64 for API"""

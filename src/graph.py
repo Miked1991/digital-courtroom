@@ -20,7 +20,7 @@ from src.nodes.justice import ChiefJustice
 class AutomatonAuditor:
     """Main orchestrator for the autonomous auditor swarm"""
     
-    def __init__(self, rubric_path: str = "rubric/week2_rubric.json"):
+    def __init__(self, rubric_path: str = "ruberics/week2_ruberic.json"):
         self.rubric_path = rubric_path
         self.rubric = self._load_rubric()
         
@@ -150,7 +150,7 @@ class AutomatonAuditor:
         
         # Prepare initial state
         initial_state = self.prepare_initial_state(repo_url, pdf_path)
-        
+        #config = {"configurable": {"thread_id": "audit_session_001"}}
         # Run graph
         final_state = self.graph.invoke(initial_state)
         

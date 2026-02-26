@@ -15,7 +15,7 @@ from src.config.prompts import JudgePrompts
 class Prosecutor:
     """The Critical Lens - 'Trust No One. Assume Vibe Coding.'"""
     
-    def __init__(self, api_key: Optional[str] = None):
+    def __init__(self, api_key: [str] = None):
         self.client = Groq(api_key=api_key or os.getenv('GROQ_API_KEY'))
         self.model = "gemma2-9b-it"  # Groq model with good reasoning
         self.prompts = JudgePrompts()
@@ -131,7 +131,7 @@ class Prosecutor:
 class Defense:
     """The Optimistic Lens - 'Reward Effort and Intent'"""
     
-    def __init__(self, api_key: Optional[str] = None):
+    def __init__(self, api_key: [str] = None):
         self.client = Groq(api_key=api_key or os.getenv('GROQ_API_KEY'))
         self.model = "gemma2-9b-it"
         self.prompts = JudgePrompts()
@@ -235,7 +235,7 @@ class Defense:
 class TechLead:
     """The Pragmatic Lens - 'Does it actually work? Is it maintainable?'"""
     
-    def __init__(self, api_key: Optional[str] = None):
+    def __init__(self, api_key: [str] = None):
         self.client = Groq(api_key=api_key or os.getenv('GROQ_API_KEY'))
         self.model = "gemma2-9b-it"
         self.prompts = JudgePrompts()

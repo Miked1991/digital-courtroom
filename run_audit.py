@@ -1,106 +1,74 @@
 #!/usr/bin/env python3
 """
-Automaton Auditor - Main entry point
-Orchestrates the entire swarm for autonomous code governance
+Quick test version with hardcoded paths
 """
 
 import os
 import sys
-import argparse
-import logging
 from pathlib import Path
 from dotenv import load_dotenv
 
-# Load environment variables
 load_dotenv()
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
-
-# Add src to path
 sys.path.insert(0, str(Path(__file__).parent))
-
 from src.graph import AutomatonAuditor
 
 
-def main():
-    """Main entry point"""
-    parser = argparse.ArgumentParser(
-        description="Automaton Auditor - Autonomous Code Governance Swarm"
-    )
+def quick_test():
+    """Quick test with hardcoded values"""
     
-    parser.add_argument(
-        "--repo",
-        type=str,
-        required=True,
-        help="GitHub repository URL to audit"
-    )
+    # 🔴 CHANGE THESE VALUES TO YOUR ACTUAL PATHS 🔴
+    REPO_URL = "https://github.com/mussewold/the_vibe_code_auditor"  # Your GitHub repo
+    PDF_PATH = "reports/intrem_report.pdf"  # Your PDF path
+    RUBRIC_PATH = "ruberics/week2_ruberic.json"
     
-    parser.add_argument(
-        "--pdf",
-        type=str,
-        required=True,
-        help="Path to PDF report file"
-    )
+    # Validate paths
+    if not os.path.exists(PDF_PATH):
+        print(f"❌ PDF not found: {PDF_PATH}")
+        print("Please update the PDF_PATH variable with the correct path")
+        return
     
-    parser.add_argument(
-        "--rubric",
-        type=str,
-        default="rubric/week2_rubric.json",
-        help="Path to rubric JSON file"
-    )
+    if not os.path.exists(RUBRIC_PATH):
+        print(f"❌ Rubric not found: {RUBRIC_PATH}")
+        return
     
-    parser.add_argument(
-        "--output",
-        type=str,
-        default="audits",
-        help="Output directory for audit reports"
-    )
-    
-    args = parser.parse_args()
-    
-    # Validate inputs
-    if not os.path.exists(args.pdf):
-        logger.error(f"PDF file not found: {args.pdf}")
-        sys.exit(1)
-    
-    if not os.path.exists(args.rubric):
-        logger.error(f"Rubric file not found: {args.rubric}")
-        sys.exit(1)
+    print("=" * 60)
+    print("AUTOMATON AUDITOR - QUICK TEST")
+    print("=" * 60)
+    print(f"Repository: {REPO_URL}")
+    print(f"PDF Report: {PDF_PATH}")
+    print(f"Rubric: {RUBRIC_PATH}")
+    print("=" * 60)
     
     # Initialize auditor
-    logger.info("Initializing Automaton Auditor swarm...")
-    auditor = AutomatonAuditor(rubric_path=args.rubric)
+    print("\n🔄 Initializing auditor swarm...")
+    auditor = AutomatonAuditor(rubric_path=RUBRIC_PATH)
     
     # Run audit
-    logger.info(f"Starting audit of {args.repo}")
-    logger.info("This may take a few minutes...")
+    print("🔄 Running forensic analysis...")
+    print("   (This may take a few minutes)\n")
     
     try:
-        result = auditor.run(args.repo, args.pdf)
+        result = auditor.run(REPO_URL, PDF_PATH)
         
-        # Print summary
-        logger.info("=" * 50)
-        logger.info("AUDIT COMPLETE")
-        logger.info("=" * 50)
-        logger.info(f"Final report saved to: audits/report_onself_generated/audit_report.md")
-        logger.info(f"Evidence summary saved to: audits/langsmith_logs/evidence_summary.json")
-        logger.info(f"Execution metadata saved to: audits/langsmith_logs/execution_metadata.json")
+        print("\n✅ AUDIT COMPLETE")
+        print("=" * 60)
+        print("📊 Results saved to:")
+        print("   - audits/report_onself_generated/audit_report.md")
+        print("   - audits/langsmith_logs/evidence_summary.json")
         
-        # Print key metrics
-        metadata = result['execution_metadata']
-        logger.info(f"Evidence collected: {metadata.get('evidence_count', 0)}")
-        logger.info(f"Opinions rendered: {metadata.get('total_opinions', 0)}")
-        logger.info(f"Criteria resolved: {metadata.get('criteria_resolved', 0)}")
+        # Print first few lines of report
+        if result.get('final_report'):
+            preview = result['final_report'].split('\n')[:10]
+            print("\n📄 Report Preview:")
+            for line in preview:
+                print(f"   {line}")
         
     except Exception as e:
-        logger.error(f"Audit failed: {str(e)}")
-        sys.exit(1)
+        print(f"\n❌ Error: {str(e)}")
+        import traceback
+        traceback.print_exc()
 
 
 if __name__ == "__main__":
-    main()
+    quick_test()

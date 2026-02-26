@@ -7,7 +7,8 @@ import tempfile
 from pathlib import Path
 from typing import List, Dict, Optional, Tuple
 import fitz  # PyMuPDF for image extraction
-from docling.document_parser import DocumentParser
+#from docling.document_parser import DocumentParser
+from docling.document_converter import DocumentConverter
 import json
 
 
@@ -15,7 +16,7 @@ class PDFForensics:
     """Advanced PDF analysis with RAG-lite capabilities"""
     
     def __init__(self):
-        self.parser = DocumentParser()
+        self.parser = DocumentConverter()
         self.document = None
         self.chunks = []
     
@@ -23,7 +24,7 @@ class PDFForensics:
         """Load and parse PDF document"""
         try:
             # Use Docling for structured parsing
-            self.document = self.parser.parse(pdf_path)
+            self.document = self.parser.convert(pdf_path)
             
             # Extract text chunks with metadata
             self.chunks = self._chunk_document()

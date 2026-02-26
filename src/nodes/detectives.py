@@ -10,9 +10,9 @@ from langgraph.graph import StateGraph
 import asyncio
 
 from src.state import AgentState, Evidence
-from src.tools.git_tools import GitForensics
+from src.tools.repo_tools import GitForensics
 from src.tools.ast_tools import ASTAnalyzer
-from src.tools.pdf_tools import PDFForensics
+from src.tools.doc_tools import PDFForensics
 from src.tools.vision_tools import VisionForensics
 from src.config.prompts import DetectivePrompts
 
