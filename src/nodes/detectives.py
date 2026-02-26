@@ -1,305 +1,375 @@
 """
-Detective layer nodes for forensic evidence collection.
-Runs in parallel to gather objective evidence.
+Forensic detective agents that collect objective evidence.
+No opinions - only facts based on strict forensic protocols.
 """
 
+import os
+import json
 from typing import Dict, List, Any
+from langgraph.graph import StateGraph
 import asyncio
-import logging
 
-from ..state import AgentState, Evidence
-from ..tools.repo_investigator import RepoInvestigatorTools
-from ..tools.doc_analyst import DocAnalystTools
-from ..tools.vision_inspector import VisionInspectorTools
-from ..utils.context_builder import ContextBuilder
-
-logger = logging.getLogger(__name__)
+from src.state import AgentState, Evidence
+from src.tools.git_tools import GitForensics
+from src.tools.ast_tools import ASTAnalyzer
+from src.tools.pdf_tools import PDFForensics
+from src.tools.vision_tools import VisionForensics
+from src.config.prompts import DetectivePrompts
 
 
-class DetectiveNodes:
-    """Nodes for the Detective layer - objective evidence collection."""
+class RepoInvestigator:
+    """Code detective - analyzes repository structure with AST-level precision"""
     
     def __init__(self):
-        self.context_builder = ContextBuilder()
-        
-    def repo_investigator_node(self, state: AgentState) -> Dict[str, Any]:
-        """
-        Node for repository forensic analysis.
-        
-        Args:
-            state: Current agent state
-            
-        Returns:
-            Updated state with repo evidence
-        """
-        logger.info("Running RepoInvestigator node")
-        
-        try:
-            with RepoInvestigatorTools() as tools:
-                # Clone repository
-                clone_evidence = tools.clone_repository(state["repo_url"])
-                
-                # Collect all repo evidence
-                repo_evidence = {
-                    "clone_result": clone_evidence,
-                }
-                
-                if clone_evidence.found:
-                    # Analyze git history
-                    repo_evidence["git_history"] = tools.analyze_git_history()
-                    
-                    # Analyze state definitions
-                    repo_evidence["state_definitions"] = tools.analyze_state_definition()
-                    
-                    # Analyze graph orchestration
-                    repo_evidence["graph_orchestration"] = tools.analyze_graph_orchestration()
-                    
-                    # Analyze tool safety
-                    repo_evidence["tool_safety"] = tools.analyze_tool_safety()
-                    
-                    # Analyze structured output
-                    repo_evidence["structured_output"] = tools.analyze_structured_output()
-                
-                # Filter to only relevant dimensions
-                relevant_dimensions = self.context_builder.get_dimensions_for_target(
-                    state["rubric_dimensions"], 
-                    "github_repo"
-                )
-                
-                # Organize evidence by rubric dimension
-                evidences = {}
-                for dim in relevant_dimensions:
-                    dim_evidence = []
-                    
-                    # Map dimension ID to relevant evidence
-                    if dim.id == "forensic_accuracy_code":
-                        dim_evidence.extend([
-                            repo_evidence.get("state_definitions"),
-                            repo_evidence.get("tool_safety"),
-                            repo_evidence.get("structured_output")
-                        ])
-                    elif dim.id == "langgraph_architecture":
-                        dim_evidence.append(repo_evidence.get("graph_orchestration"))
-                    elif dim.id == "judicial_nuance":
-                        dim_evidence.append(repo_evidence.get("structured_output"))
-                    
-                    # Filter out None and add to evidences
-                    valid_evidence = [e for e in dim_evidence if e and e.found]
-                    if valid_evidence:
-                        evidences[dim.id] = valid_evidence
-                
-                return {
-                    "evidences": {
-                        "repo_investigator": repo_evidence,
-                        "organized_by_dimension": evidences
-                    }
-                }
-                
-        except Exception as e:
-            logger.error(f"Error in RepoInvestigator: {e}")
-            return {
-                "errors": [f"RepoInvestigator error: {str(e)}"],
-                "evidences": {
-                    "repo_investigator_error": Evidence(
-                        goal="Repository investigation",
-                        found=False,
-                        content=None,
-                        location=state["repo_url"],
-                        rationale=f"Error: {str(e)}",
-                        confidence=0.0,
-                        artifact_type="code"
-                    )
-                }
-            }
-    
-    def doc_analyst_node(self, state: AgentState) -> Dict[str, Any]:
-        """
-        Node for document forensic analysis.
-        
-        Args:
-            state: Current agent state
-            
-        Returns:
-            Updated state with document evidence
-        """
-        logger.info("Running DocAnalyst node")
-        
-        try:
-            tools = DocAnalystTools()
-            
-            # Extract text from PDF
-            text_evidence = tools.extract_text_from_pdf(state["pdf_path"])
-            
-            doc_evidence = {
-                "text_extraction": text_evidence,
-            }
-            
-            if text_evidence.found:
-                # Analyze theoretical depth
-                doc_evidence["theoretical_depth"] = tools.analyze_theoretical_depth(state["pdf_path"])
-                
-                # Cross-reference with repo evidence if available
-                if "repo_investigator" in state.get("evidences", {}):
-                    doc_evidence["cross_reference"] = tools.cross_reference_claims(
-                        state["pdf_path"],
-                        state["evidences"]["repo_investigator"]
-                    )
-            
-            # Filter to document-relevant dimensions
-            relevant_dimensions = self.context_builder.get_dimensions_for_target(
-                state["rubric_dimensions"],
-                "pdf_report"
-            )
-            
-            # Organize evidence by rubric dimension
-            evidences = {}
-            for dim in relevant_dimensions:
-                if dim.id == "forensic_accuracy_docs":
-                    dim_evidence = [
-                        doc_evidence.get("theoretical_depth"),
-                        doc_evidence.get("cross_reference")
-                    ]
-                    valid_evidence = [e for e in dim_evidence if e and e.found]
-                    if valid_evidence:
-                        evidences[dim.id] = valid_evidence
-            
-            return {
-                "evidences": {
-                    "doc_analyst": doc_evidence,
-                    "organized_by_dimension": evidences
-                }
-            }
-            
-        except Exception as e:
-            logger.error(f"Error in DocAnalyst: {e}")
-            return {
-                "errors": [f"DocAnalyst error: {str(e)}"],
-                "evidences": {
-                    "doc_analyst_error": Evidence(
-                        goal="Document analysis",
-                        found=False,
-                        content=None,
-                        location=state["pdf_path"],
-                        rationale=f"Error: {str(e)}",
-                        confidence=0.0,
-                        artifact_type="documentation"
-                    )
-                }
-            }
-    
-    def vision_inspector_node(self, state: AgentState) -> Dict[str, Any]:
-        """
-        Node for vision-based diagram analysis.
-        
-        Args:
-            state: Current agent state
-            
-        Returns:
-            Updated state with diagram evidence
-        """
-        logger.info("Running VisionInspector node")
-        
-        try:
-            tools = VisionInspectorTools()
-            
-            # Analyze diagrams
-            diagram_analysis = tools.analyze_diagram(state["pdf_path"])
-            diagram_classification = tools.classify_diagram_type(state["pdf_path"])
-            
-            vision_evidence = {
-                "diagram_analysis": diagram_analysis,
-                "diagram_classification": diagram_classification
-            }
-            
-            # Add to organized evidence
-            evidences = {}
-            if diagram_analysis.found:
-                evidences["diagram_analysis"] = [diagram_analysis]
-            if diagram_classification.found:
-                evidences["diagram_classification"] = [diagram_classification]
-            
-            return {
-                "evidences": {
-                    "vision_inspector": vision_evidence,
-                    "organized_by_dimension": evidences
-                }
-            }
-            
-        except Exception as e:
-            logger.error(f"Error in VisionInspector: {e}")
-            return {
-                "errors": [f"VisionInspector error: {str(e)}"],
-                "evidences": {
-                    "vision_inspector_error": Evidence(
-                        goal="Vision analysis",
-                        found=False,
-                        content=None,
-                        location=state["pdf_path"],
-                        rationale=f"Error: {str(e)}",
-                        confidence=0.0,
-                        artifact_type="diagram"
-                    )
-                }
-            }
-
-
-class EvidenceAggregator:
-    """Node for synchronizing and aggregating evidence from parallel detectives."""
+        self.ast_analyzer = ASTAnalyzer()
+        self.prompts = DetectivePrompts()
     
     def __call__(self, state: AgentState) -> Dict[str, Any]:
-        """
-        Aggregate evidence from all detective nodes.
+        """Execute forensic analysis on repository"""
+        evidences = {}
         
-        Args:
-            state: Current agent state
+        try:
+            with GitForensics() as git:
+                # Clone repo in sandbox
+                success, message = git.clone_repository(state['repo_url'])
+                
+                if not success:
+                    evidences['git_clone'] = [Evidence(
+                        goal="Clone repository for analysis",
+                        found=False,
+                        content=message,
+                        location="git clone operation",
+                        rationale="Repository clone failed - cannot proceed with code analysis",
+                        confidence=1.0
+                    )]
+                    return {"evidences": state['evidences'] | evidences}
+                
+                # Collect forensic evidence
+                
+                # 1. Git History Analysis
+                commits = git.get_commit_history()
+                evidences['git_history'] = [Evidence(
+                    goal="Analyze commit history for development patterns",
+                    found=len(commits) > 0,
+                    content=json.dumps(commits, indent=2),
+                    location="git log",
+                    rationale=f"Found {len(commits)} commits showing development progression",
+                    confidence=0.95 if len(commits) > 3 else 0.7
+                )]
+                
+                # 2. State Management Check
+                state_files = git.find_files('state.py') + git.find_files('graph.py')
+                state_evidence = []
+                
+                for file in state_files[:3]:  # Check first few
+                    content = git.read_file(file)
+                    if content:
+                        tree = self.ast_analyzer.parse_file(os.path.join(git.repo_path, file))
+                        if tree:
+                            models = self.ast_analyzer.find_pydantic_models(tree)
+                            state_evidence.append(Evidence(
+                                goal="Verify Pydantic state models",
+                                found=len(models) > 0,
+                                content=f"Found models: {[m['name'] for m in models]}",
+                                location=file,
+                                rationale=f"{'Found' if models else 'No'} Pydantic models in {file}",
+                                confidence=0.9 if models else 0.8
+                            ))
+                
+                if not state_evidence:
+                    state_evidence.append(Evidence(
+                        goal="Verify Pydantic state models",
+                        found=False,
+                        content=None,
+                        location="src/state.py or src/graph.py",
+                        rationale="No state definition files found with Pydantic models",
+                        confidence=1.0
+                    ))
+                
+                evidences['state_management'] = state_evidence
+                
+                # 3. Graph Orchestration Analysis
+                graph_evidence = []
+                for file in git.find_files('graph.py'):
+                    content = git.read_file(file)
+                    if content:
+                        tree = self.ast_analyzer.parse_file(os.path.join(git.repo_path, file))
+                        if tree:
+                            graph_info = self.ast_analyzer.find_stategraph_usage(tree)
+                            graph_evidence.append(Evidence(
+                                goal="Analyze graph orchestration for parallelism",
+                                found=graph_info['has_stategraph'],
+                                content=json.dumps(graph_info, indent=2),
+                                location=file,
+                                rationale=f"Graph {'has' if graph_info['has_stategraph'] else 'lacks'} StateGraph. Parallel patterns: {graph_info['parallel_patterns']}",
+                                confidence=0.85
+                            ))
+                
+                evidences['graph_orchestration'] = graph_evidence
+                
+                # 4. Tool Safety Check
+                tool_files = git.find_files('tools/')
+                safety_evidence = []
+                
+                for file in tool_files:
+                    if file.endswith('.py'):
+                        content = git.read_file(file)
+                        if content:
+                            tree = self.ast_analyzer.parse_file(os.path.join(git.repo_path, file))
+                            if tree:
+                                unsafe_calls = self.ast_analyzer.find_os_system_calls(tree)
+                                if unsafe_calls:
+                                    safety_evidence.append(Evidence(
+                                        goal="Verify sandboxed tool execution",
+                                        found=False,
+                                        content=json.dumps(unsafe_calls),
+                                        location=file,
+                                        rationale=f"Found {len(unsafe_calls)} unsafe os.system calls without sandboxing",
+                                        confidence=1.0
+                                    ))
+                
+                if not safety_evidence:
+                    safety_evidence.append(Evidence(
+                        goal="Verify sandboxed tool execution",
+                        found=True,
+                        content="No unsafe system calls detected",
+                        location="src/tools/",
+                        rationale="All tools appear to use safe practices",
+                        confidence=0.9
+                    ))
+                
+                evidences['tool_safety'] = safety_evidence
+                
+                # 5. Structured Output Check
+                judge_files = git.find_files('judges.py') + git.find_files('nodes/')
+                structured_evidence = []
+                
+                for file in judge_files:
+                    if file.endswith('.py'):
+                        content = git.read_file(file)
+                        if content:
+                            tree = self.ast_analyzer.parse_file(os.path.join(git.repo_path, file))
+                            if tree:
+                                structured_calls = self.ast_analyzer.find_structured_output_usage(tree)
+                                if structured_calls:
+                                    structured_evidence.append(Evidence(
+                                        goal="Verify structured JSON output enforcement",
+                                        found=True,
+                                        content=json.dumps(structured_calls),
+                                        location=file,
+                                        rationale=f"Found structured output enforcement: {[c['method'] for c in structured_calls]}",
+                                        confidence=0.9
+                                    ))
+                
+                if not structured_evidence:
+                    structured_evidence.append(Evidence(
+                        goal="Verify structured JSON output enforcement",
+                        found=False,
+                        content=None,
+                        location="src/nodes/judges.py",
+                        rationale="No .with_structured_output() or .bind_tools() calls detected",
+                        confidence=0.85
+                    ))
+                
+                evidences['structured_output'] = structured_evidence
+                
+        except Exception as e:
+            evidences['error'] = [Evidence(
+                goal="Handle repository analysis errors",
+                found=False,
+                content=str(e),
+                location="RepoInvestigator",
+                rationale=f"Analysis failed with error: {str(e)}",
+                confidence=1.0
+            )]
+        
+        # Merge with existing evidences using operator.ior
+        return {"evidences": state['evidences'] | evidences}
+
+
+class DocAnalyst:
+    """Document detective - analyzes PDF reports with RAG-lite"""
+    
+    def __init__(self):
+        self.pdf_forensics = PDFForensics()
+        self.prompts = DetectivePrompts()
+    
+    def __call__(self, state: AgentState) -> Dict[str, Any]:
+        """Execute forensic analysis on PDF report"""
+        evidences = {}
+        
+        try:
+            # Load PDF
+            if not os.path.exists(state['pdf_path']):
+                evidences['pdf_load'] = [Evidence(
+                    goal="Load PDF report for analysis",
+                    found=False,
+                    content=None,
+                    location=state['pdf_path'],
+                    rationale="PDF file not found at specified path",
+                    confidence=1.0
+                )]
+                return {"evidences": state['evidences'] | evidences}
             
-        Returns:
-            Updated state with aggregated evidence
-        """
-        logger.info("Running EvidenceAggregator node")
+            success = self.pdf_forensics.load_pdf(state['pdf_path'])
+            
+            if not success:
+                evidences['pdf_load'] = [Evidence(
+                    goal="Load PDF report for analysis",
+                    found=False,
+                    content=None,
+                    location=state['pdf_path'],
+                    rationale="Failed to parse PDF file",
+                    confidence=1.0
+                )]
+                return {"evidences": state['evidences'] | evidences}
+            
+            # 1. Theoretical Depth Analysis
+            key_terms = [
+                "Dialectical Synthesis",
+                "Fan-In",
+                "Fan-Out",
+                "Metacognition",
+                "State Synchronization",
+                "Parallel Execution",
+                "Forensic Accuracy"
+            ]
+            
+            term_results = self.pdf_forensics.extract_key_terms(key_terms)
+            
+            theoretical_evidence = []
+            for term, contexts in term_results.items():
+                theoretical_evidence.append(Evidence(
+                    goal="Verify theoretical depth and concept understanding",
+                    found=True,
+                    content=json.dumps(contexts[:2], indent=2),  # First 2 contexts
+                    location=f"PDF Report, page {contexts[0]['page'] if contexts else 'unknown'}",
+                    rationale=f"Found discussion of '{term}' with proper context",
+                    confidence=0.85 if contexts else 0.5
+                ))
+            
+            # Add evidence for missing terms
+            missing_terms = [t for t in key_terms if t not in term_results]
+            if missing_terms:
+                theoretical_evidence.append(Evidence(
+                    goal="Verify theoretical depth and concept understanding",
+                    found=False,
+                    content=None,
+                    location="PDF Report",
+                    rationale=f"Missing discussion of key concepts: {', '.join(missing_terms[:3])}",
+                    confidence=0.9
+                ))
+            
+            evidences['theoretical_depth'] = theoretical_evidence
+            
+            # 2. Cross-Reference Claims
+            # Extract potential file path claims from PDF
+            claims = []
+            for chunk in self.pdf_forensics.chunks:
+                # Look for file path patterns
+                words = chunk['text'].split()
+                for word in words:
+                    if '.py' in word or '/' in word and '.' in word:
+                        claims.append(word.strip('.,;:()'))
+            
+            # Verify claims against repo evidence
+            verified_claims = []
+            for claim in list(set(claims))[:10]:  # Limit to 10 claims
+                # Check if claim exists in repo evidence
+                found_in_repo = False
+                for evidence_list in state['evidences'].values():
+                    for evidence in evidence_list:
+                        if evidence.location and claim in evidence.location:
+                            found_in_repo = True
+                            break
+                
+                verified_claims.append({
+                    'claim': claim,
+                    'verified': found_in_repo,
+                    'source': 'PDF'
+                })
+            
+            evidences['cross_reference'] = [Evidence(
+                goal="Cross-reference PDF claims with repository evidence",
+                found=any(vc['verified'] for vc in verified_claims),
+                content=json.dumps(verified_claims, indent=2),
+                location="PDF Report cross-reference",
+                rationale=f"Verified {sum(1 for vc in verified_claims if vc['verified'])} out of {len(verified_claims)} claims",
+                confidence=0.8
+            )]
+            
+        except Exception as e:
+            evidences['error'] = [Evidence(
+                goal="Handle document analysis errors",
+                found=False,
+                content=str(e),
+                location="DocAnalyst",
+                rationale=f"Analysis failed with error: {str(e)}",
+                confidence=1.0
+            )]
         
-        # Collect all evidence
-        all_evidence = []
-        organized_evidence = {}
+        return {"evidences": state['evidences'] | evidences}
+
+
+class VisionInspector:
+    """Diagram detective - analyzes architectural diagrams in PDF"""
+    
+    def __init__(self):
+        self.vision = VisionForensics()
+        self.pdf_forensics = PDFForensics()
+    
+    def __call__(self, state: AgentState) -> Dict[str, Any]:
+        """Execute forensic analysis on diagrams"""
+        evidences = {}
         
-        # Flatten all evidence collections
-        for source, evidence_dict in state.get("evidences", {}).items():
-            if source == "organized_by_dimension":
-                for dim_id, evidence_list in evidence_dict.items():
-                    if dim_id not in organized_evidence:
-                        organized_evidence[dim_id] = []
-                    organized_evidence[dim_id].extend(evidence_list)
-                    all_evidence.extend(evidence_list)
-            elif isinstance(evidence_dict, dict):
-                for key, evidence in evidence_dict.items():
-                    if isinstance(evidence, Evidence):
-                        all_evidence.append(evidence)
+        try:
+            # Extract images from PDF
+            images = self.pdf_forensics.extract_images(state['pdf_path'])
+            
+            if not images:
+                evidences['diagrams'] = [Evidence(
+                    goal="Analyze architectural diagrams",
+                    found=False,
+                    content=None,
+                    location="PDF Report",
+                    rationale="No images found in PDF for diagram analysis",
+                    confidence=1.0
+                )]
+                return {"evidences": state['evidences'] | evidences}
+            
+            # Analyze each diagram
+            diagram_evidence = []
+            for img in images[:3]:  # Analyze first 3 diagrams
+                analysis = self.vision.analyze_diagram(
+                    img['path'],
+                    "Analyze this architecture diagram. Is it a LangGraph state machine showing parallel execution paths?"
+                )
+                
+                diagram_evidence.append(Evidence(
+                    goal="Analyze architectural diagrams for swarm visualization",
+                    found=True,
+                    content=json.dumps(analysis, indent=2),
+                    location=f"PDF Report, page {img['page']}",
+                    rationale=f"Diagram type: {analysis.get('diagram_type', 'Unknown')}. Parallel detected: {analysis.get('parallel_detected', False)}",
+                    confidence=0.75
+                ))
+                
+                # Cleanup temp file
+                try:
+                    os.unlink(img['path'])
+                except:
+                    pass
+            
+            evidences['diagrams'] = diagram_evidence
+            
+        except Exception as e:
+            evidences['error'] = [Evidence(
+                goal="Handle vision analysis errors",
+                found=False,
+                content=str(e),
+                location="VisionInspector",
+                rationale=f"Analysis failed with error: {str(e)}",
+                confidence=1.0
+            )]
         
-        # Create aggregated view
-        aggregated = {
-            "total_evidence": len(all_evidence),
-            "evidence_by_dimension": organized_evidence,
-            "evidence_by_type": {},
-            "confidence_summary": {}
-        }
-        
-        # Group by artifact type
-        for evidence in all_evidence:
-            art_type = evidence.artifact_type
-            if art_type not in aggregated["evidence_by_type"]:
-                aggregated["evidence_by_type"][art_type] = []
-            aggregated["evidence_by_type"][art_type].append({
-                "goal": evidence.goal,
-                "found": evidence.found,
-                "confidence": evidence.confidence
-            })
-        
-        # Calculate confidence by dimension
-        for dim_id, evidence_list in organized_evidence.items():
-            if evidence_list:
-                avg_confidence = sum(e.confidence for e in evidence_list) / len(evidence_list)
-                aggregated["confidence_summary"][dim_id] = avg_confidence
-        
-        return {
-            "aggregated_evidence": aggregated
-        }
+        return {"evidences": state['evidences'] | evidences}

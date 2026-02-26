@@ -1,60 +1,106 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
-Command-line interface for running the Automaton Auditor.
+Automaton Auditor - Main entry point
+Orchestrates the entire swarm for autonomous code governance
 """
 
-import asyncio
-import argparse
 import os
+import sys
+import argparse
+import logging
 from pathlib import Path
 from dotenv import load_dotenv
 
-from src import AutomatonAuditor
-
+# Load environment variables
 load_dotenv()
 
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
-async def main():
-    parser = argparse.ArgumentParser(description="Run Automaton Auditor on a repository")
-    parser.add_argument("repo_url", help="GitHub repository URL to audit")
-    parser.add_argument("pdf_path", help="Path to PDF report")
-    parser.add_argument("--output", "-o", default="audit/report.md", help="Output report path")
-    parser.add_argument("--rubric", default="rubric/week2_rubric.json", help="Rubric JSON path")
-    parser.add_argument("--thread", default="default", help="Thread ID for checkpointing")
+# Add src to path
+sys.path.insert(0, str(Path(__file__).parent))
+
+from src.graph import AutomatonAuditor
+
+
+def main():
+    """Main entry point"""
+    parser = argparse.ArgumentParser(
+        description="Automaton Auditor - Autonomous Code Governance Swarm"
+    )
+    
+    parser.add_argument(
+        "--repo",
+        type=str,
+        required=True,
+        help="GitHub repository URL to audit"
+    )
+    
+    parser.add_argument(
+        "--pdf",
+        type=str,
+        required=True,
+        help="Path to PDF report file"
+    )
+    
+    parser.add_argument(
+        "--rubric",
+        type=str,
+        default="rubric/week2_rubric.json",
+        help="Path to rubric JSON file"
+    )
+    
+    parser.add_argument(
+        "--output",
+        type=str,
+        default="audits",
+        help="Output directory for audit reports"
+    )
     
     args = parser.parse_args()
     
     # Validate inputs
-    if not os.path.exists(args.pdf_path):
-        print(f"Error: PDF file not found: {args.pdf_path}")
-        return 1
+    if not os.path.exists(args.pdf):
+        logger.error(f"PDF file not found: {args.pdf}")
+        sys.exit(1)
     
     if not os.path.exists(args.rubric):
-        print(f"Warning: Rubric not found at {args.rubric}, using default")
+        logger.error(f"Rubric file not found: {args.rubric}")
+        sys.exit(1)
     
-    # Run audit
-    print(f"Starting audit for {args.repo_url}")
+    # Initialize auditor
+    logger.info("Initializing Automaton Auditor swarm...")
     auditor = AutomatonAuditor(rubric_path=args.rubric)
     
-    final_state = await auditor.run_audit(
-        repo_url=args.repo_url,
-        pdf_path=args.pdf_path,
-        thread_id=args.thread
-    )
+    # Run audit
+    logger.info(f"Starting audit of {args.repo}")
+    logger.info("This may take a few minutes...")
     
-    # Save report
-    auditor.save_report(final_state, args.output)
-    print(f"Audit complete. Report saved to {args.output}")
-    
-    # Print summary
-    print("\n" + "="*50)
-    print("AUDIT SUMMARY")
-    print("="*50)
-    print(final_state.get("synthesis_notes", "No synthesis notes available"))
-    print("="*50)
-    
-    return 0
+    try:
+        result = auditor.run(args.repo, args.pdf)
+        
+        # Print summary
+        logger.info("=" * 50)
+        logger.info("AUDIT COMPLETE")
+        logger.info("=" * 50)
+        logger.info(f"Final report saved to: audits/report_onself_generated/audit_report.md")
+        logger.info(f"Evidence summary saved to: audits/langsmith_logs/evidence_summary.json")
+        logger.info(f"Execution metadata saved to: audits/langsmith_logs/execution_metadata.json")
+        
+        # Print key metrics
+        metadata = result['execution_metadata']
+        logger.info(f"Evidence collected: {metadata.get('evidence_count', 0)}")
+        logger.info(f"Opinions rendered: {metadata.get('total_opinions', 0)}")
+        logger.info(f"Criteria resolved: {metadata.get('criteria_resolved', 0)}")
+        
+    except Exception as e:
+        logger.error(f"Audit failed: {str(e)}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
-    exit(asyncio.run(main()))
+    main()
