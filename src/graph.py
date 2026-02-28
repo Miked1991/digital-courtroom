@@ -1,6 +1,7 @@
 """
 Main LangGraph definition orchestrating the entire swarm.
 Implements parallel detectives, fan-in aggregation, parallel judges, and synthesis.
+Uses operator.add and operator.ior reducers for proper state management.
 """
 
 import os
@@ -10,11 +11,11 @@ from typing import Dict, List, Any, Optional, Literal
 from pathlib import Path
 import operator
 
-from langgraph.graph import START, StateGraph, END
+from langgraph.graph import START,StateGraph, END
 from langgraph.checkpoint.memory import MemorySaver
-#from langgraph.constants import START
+from langgraph.constants import START
 
-from src.state import AgentState, RubricDimension, SynthesisRule
+from src.state import AgentState, RubricDimension, SynthesisRule, Evidence, JudicialOpinion
 from src.nodes.detectives import RepoInvestigator, DocAnalyst, VisionInspector
 from src.nodes.judges import Prosecutor, Defense, TechLead
 from src.nodes.justice import ChiefJustice
@@ -23,7 +24,7 @@ from src.nodes.justice import ChiefJustice
 class AutomatonAuditor:
     """Main orchestrator for the autonomous auditor swarm"""
     
-    def __init__(self, rubric_path: str = "ruberics/week2_ruberic.json"):
+    def __init__(self, rubric_path: str = "ruberics\\week2_ruberic.json"):
         self.rubric_path = rubric_path
         self.rubric = self._load_rubric()
         
@@ -62,42 +63,111 @@ class AutomatonAuditor:
         builder.add_node("tech_lead", self.tech_lead)
         builder.add_node("chief_justice", self.chief_justice)
         
-        # Set entry point to START
+        # Set entry point
         builder.add_edge(START, "repo_investigator")
         
-        # Define edges
+        # PARALLEL BRANCHES FOR DETECTIVES - Fan-out
+        # After repo_investigator, run both doc_analyst and vision_inspector in parallel
         builder.add_edge("repo_investigator", "doc_analyst")
         builder.add_edge("repo_investigator", "vision_inspector")
         
+        # FAN-IN SYNCHRONIZATION - Both detectives feed into aggregator
         builder.add_edge("doc_analyst", "evidence_aggregator")
         builder.add_edge("vision_inspector", "evidence_aggregator")
         
+        # PARALLEL BRANCHES FOR JUDGES - Fan-out
+        # After aggregation, run all judges in parallel
         builder.add_edge("evidence_aggregator", "prosecutor")
         builder.add_edge("evidence_aggregator", "defense")
         builder.add_edge("evidence_aggregator", "tech_lead")
         
+        # FAN-IN SYNCHRONIZATION - All judges feed into chief justice
         builder.add_edge("prosecutor", "chief_justice")
         builder.add_edge("defense", "chief_justice")
         builder.add_edge("tech_lead", "chief_justice")
         
+        # End after chief justice
         builder.add_edge("chief_justice", END)
+        
+        # CONDITIONAL EDGES FOR ERROR HANDLING
+        builder.add_conditional_edges(
+            "repo_investigator",
+            self._check_clone_success,
+            {
+                "continue": "doc_analyst",  # Success path
+                "error_doc": END,  # Error path for doc_analyst
+                "error_vision": END  # Error path for vision_inspector
+            }
+        )
+        
+        # Additional error handling for evidence collection
+        builder.add_conditional_edges(
+            "evidence_aggregator",
+            self._check_evidence_collected,
+            {
+                "continue": "prosecutor",  # Has evidence
+                "error": END  # No evidence collected
+            }
+        )
         
         # Compile with memory for state persistence
         memory = MemorySaver()
         return builder.compile(checkpointer=memory)
     
     def _aggregate_evidence(self, state: AgentState) -> Dict[str, Any]:
-        """Synchronization node - aggregates evidence from all detectives."""
+        """
+        Synchronization node - aggregates evidence from all detectives.
+        Uses operator.ior reducer to merge evidence from parallel branches.
+        """
         # Count evidence types for metadata
         evidence_counts = {
-            key: len(value) for key, value in state['evidences'].items()
+            key: len(value) for key, value in state.get('evidences', {}).items()
         }
+        
+        # Validate that we have at least some evidence
+        total_evidence = sum(evidence_counts.values())
         
         # Update execution metadata
         metadata = state.get('execution_metadata', {})
         metadata['evidence_aggregated'] = evidence_counts
+        metadata['total_evidence'] = total_evidence
+        metadata['aggregation_time'] = str(uuid.uuid4())
         
         return {"execution_metadata": metadata}
+    
+    def _check_clone_success(self, state: AgentState) -> str:
+        """
+        Conditional edge to handle git clone errors.
+        Returns different paths based on error type.
+        """
+        if 'git_clone' in state.get('evidences', {}):
+            for evidence in state['evidences']['git_clone']:
+                if not evidence.found:
+                    # Check error type for different handling
+                    error_msg = str(evidence.content).lower() if evidence.content else ""
+                    if "permission" in error_msg or "authentication" in error_msg:
+                        return "error_doc"  # Auth error - can't proceed
+                    elif "not found" in error_msg or "does not exist" in error_msg:
+                        return "error_vision"  # Repo doesn't exist
+                    else:
+                        return "error_doc"  # Generic error
+        
+        # Also check for other critical errors
+        if 'error' in state.get('evidences', {}):
+            return "error_doc"
+        
+        return "continue"
+    
+    def _check_evidence_collected(self, state: AgentState) -> str:
+        """Conditional edge to handle cases with no evidence"""
+        total_evidence = 0
+        for evidence_list in state.get('evidences', {}).values():
+            total_evidence += len(evidence_list)
+        
+        if total_evidence == 0:
+            return "error"
+        
+        return "continue"
     
     def prepare_initial_state(self, repo_url: str, pdf_path: str) -> AgentState:
         """Prepare initial state with rubric and rules"""
@@ -117,8 +187,8 @@ class AutomatonAuditor:
             "rubric_path": self.rubric_path,
             "rubric_dimensions": dimensions,
             "synthesis_rules": rules,
-            "evidences": {},
-            "opinions": [],
+            "evidences": {},  # Will be merged via operator.ior
+            "opinions": [],    # Will be appended via operator.add
             "final_report": "",
             "error_log": [],
             "execution_metadata": {
@@ -148,7 +218,7 @@ class AutomatonAuditor:
         if thread_id is None:
             thread_id = str(uuid.uuid4())
         
-        # Create config with proper structure - ENSURE 'configurable' key exists
+        # Create config with required thread_id
         config = {
             "configurable": {
                 "thread_id": thread_id
@@ -156,7 +226,7 @@ class AutomatonAuditor:
         }
         
         try:
-            # Run graph with config - use the config dictionary
+            # Run graph with config
             final_state = self.graph.invoke(initial_state, config=config)
             
             # Save reports
@@ -193,16 +263,20 @@ class AutomatonAuditor:
         # Save execution metadata
         metadata_path = "audits/langsmith_logs/execution_metadata.json"
         with open(metadata_path, 'w', encoding='utf-8') as f:
-            json.dump(state.get('execution_metadata', {}), f, indent=2, default=str)
+            # Convert any non-serializable objects
+            metadata = state.get('execution_metadata', {})
+            json.dump(metadata, f, indent=2, default=str)
         
         # Save evidence summary
         evidence_path = "audits/langsmith_logs/evidence_summary.json"
         evidence_summary = {}
-        for key, ev_list in state.get('evidences', {}).items():
-            try:
-                evidence_summary[key] = [e.model_dump() for e in ev_list]
-            except:
-                evidence_summary[key] = [str(e) for e in ev_list]
+        for key, ev_set in state.get('evidences', {}).items():
+            evidence_summary[key] = []
+            for evidence in ev_set:
+                if hasattr(evidence, 'model_dump'):
+                    evidence_summary[key].append(evidence.model_dump())
+                else:
+                    evidence_summary[key].append(str(evidence))
         
         with open(evidence_path, 'w', encoding='utf-8') as f:
             json.dump(evidence_summary, f, indent=2, default=str)

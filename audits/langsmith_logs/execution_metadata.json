@@ -1,5 +1,5 @@
 {
-  "start_time": "87911a6c-79a3-4eba-897c-c219199c568c",
+  "start_time": "059df40f-bb02-4da4-a54f-6c7d906780f8",
   "evidence_counts": {},
   "opinion_counts": {},
   "evidence_aggregated": {
@@ -7,7 +7,9 @@
     "pdf_load": 1,
     "diagrams": 1
   },
-  "timestamp": "2026-02-28T14:17:37.328549",
+  "total_evidence": 3,
+  "aggregation_time": "62674e35-48c8-404f-80d5-fbfbd04fa8e3",
+  "timestamp": "2026-02-28T15:48:11.911003",
   "total_opinions": 11,
   "evidence_count": 3,
   "criteria_resolved": 4

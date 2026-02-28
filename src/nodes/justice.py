@@ -20,10 +20,11 @@ class ChiefJustice:
     def __call__(self, state: AgentState) -> Dict[str, Any]:
         """Synthesize all judicial opinions into final report"""
         
-        # Group opinions by criterion
+        # Group opinions by criterion - using criterion_id as key (string, not list)
         opinions_by_criterion = defaultdict(list)
-        for opinion in state['opinions']:
-            opinions_by_criterion[opinion.criterion_id].append(opinion)
+        for opinion in state.get('opinions', []):
+            if hasattr(opinion, 'criterion_id'):
+                opinions_by_criterion[opinion.criterion_id].append(opinion)
         
         # Resolve each criterion
         resolved_scores = {}
@@ -32,7 +33,7 @@ class ChiefJustice:
         for criterion_id, opinions in opinions_by_criterion.items():
             # Get dimension info
             dimension = next(
-                (d for d in state['rubric_dimensions'] if d.id == criterion_id),
+                (d for d in state.get('rubric_dimensions', []) if d.id == criterion_id),
                 None
             )
             
@@ -44,8 +45,8 @@ class ChiefJustice:
                 criterion_id,
                 dimension.name,
                 opinions,
-                state['evidences'],
-                state['synthesis_rules']
+                state.get('evidences', {}),
+                state.get('synthesis_rules')
             )
             
             resolved_scores[criterion_id] = {
@@ -61,21 +62,22 @@ class ChiefJustice:
         report = self._generate_report(
             resolved_scores,
             dissents,
-            state['repo_url'],
-            state['pdf_path']
+            state.get('repo_url', 'Unknown'),
+            state.get('pdf_path', 'Unknown')
         )
         
         # Add execution metadata
-        metadata = {
+        metadata = state.get('execution_metadata', {})
+        metadata.update({
             'timestamp': datetime.now().isoformat(),
-            'total_opinions': len(state['opinions']),
-            'evidence_count': sum(len(v) for v in state['evidences'].values()),
+            'total_opinions': len(state.get('opinions', [])),
+            'evidence_count': sum(len(v) for v in state.get('evidences', {}).values()),
             'criteria_resolved': len(resolved_scores)
-        }
+        })
         
         return {
             "final_report": report,
-            "execution_metadata": state['execution_metadata'] | metadata
+            "execution_metadata": metadata
         }
     
     def _resolve_criterion(
@@ -84,7 +86,7 @@ class ChiefJustice:
         criterion_name: str,
         opinions: List[JudicialOpinion],
         evidences: Dict[str, List[Evidence]],
-        rules: SynthesisRule
+        rules: List [SynthesisRule]
     ) -> Tuple[int, str]:
         """
         Resolve conflicting opinions using hardcoded rules.
@@ -96,16 +98,17 @@ class ChiefJustice:
         arguments = {}
         
         for op in opinions:
-            scores[op.judge] = op.score
-            arguments[op.judge] = op.argument
+            if hasattr(op, 'judge') and hasattr(op, 'score'):
+                scores[op.judge] = op.score
+                arguments[op.judge] = getattr(op, 'argument', '')
         
         # Default scores if missing
         prosecutor_score = scores.get('Prosecutor', 1)
         defense_score = scores.get('Defense', 3)
         techlead_score = scores.get('TechLead', 2)
         
-        # Apply Rule of Security
-        if rules.security_override:
+        # Apply Rule of Security if rules exist
+        if rules and hasattr(rules, 'security_override'):
             # Check for security violations in evidence
             security_flaw = self._check_security_flaws(evidences)
             if security_flaw:
@@ -116,14 +119,17 @@ class ChiefJustice:
         
         # Apply Rule of Evidence
         fact_check = self._verify_against_evidence(opinions, evidences)
-        if fact_check['hallucinations']:
+        if fact_check.get('hallucinations'):
             # Defense overruled if hallucinating
-            if 'Defense' in fact_check['hallucinating_judges']:
+            if 'Defense' in fact_check.get('hallucinating_judges', []):
                 dissent = f"FACT SUPREMACY: Defense claimed {fact_check['hallucinations'][0]} but evidence doesn't support it."
                 return techlead_score, dissent
         
         # Calculate variance
-        score_variance = max(scores.values()) - min(scores.values())
+        if scores:
+            score_variance = max(scores.values()) - min(scores.values())
+        else:
+            score_variance = 0
         
         # High variance - significant disagreement
         if score_variance >= 3:
@@ -154,7 +160,7 @@ class ChiefJustice:
         
         # Low variance - consensus
         else:
-            final_score = round(sum(scores.values()) / len(scores))
+            final_score = round(sum(scores.values()) / len(scores)) if scores else 3
             dissent = f"Judicial consensus: Scores within {score_variance} point(s)."
         
         return final_score, dissent
@@ -165,13 +171,14 @@ class ChiefJustice:
         # Check tool safety evidence
         if 'tool_safety' in evidences:
             for evidence in evidences['tool_safety']:
-                if not evidence.found and 'unsafe' in evidence.content.lower():
-                    return f"Security flaw detected: {evidence.rationale}"
+                if hasattr(evidence, 'found') and not evidence.found:
+                    if hasattr(evidence, 'content') and evidence.content and 'unsafe' in str(evidence.content).lower():
+                        return f"Security flaw detected: {getattr(evidence, 'rationale', 'Unknown')}"
         
         # Check for shell injection risks
         for key, evidence_list in evidences.items():
             for evidence in evidence_list:
-                if evidence.location and 'os.system' in str(evidence.content):
+                if hasattr(evidence, 'location') and evidence.location and 'os.system' in str(getattr(evidence, 'content', '')):
                     return f"Potential shell injection risk in {evidence.location}"
         
         return ""
@@ -188,26 +195,28 @@ class ChiefJustice:
             'hallucinating_judges': []
         }
         
-        # Build evidence lookup
+        # Build evidence lookup set (using strings, not lists)
         evidence_locations = set()
         for evidence_list in evidences.values():
             for evidence in evidence_list:
-                if evidence.location:
-                    evidence_locations.add(evidence.location)
+                if hasattr(evidence, 'location') and evidence.location:
+                    evidence_locations.add(str(evidence.location))
         
         # Check each opinion's citations
         for opinion in opinions:
-            for citation in opinion.cited_evidence:
-                # Check if citation exists in evidence
-                found = False
-                for loc in evidence_locations:
-                    if citation in loc or loc in citation:
-                        found = True
-                        break
-                
-                if not found:
-                    result['hallucinations'].append(f"{opinion.judge} cited '{citation}' but not found")
-                    result['hallucinating_judges'].append(opinion.judge)
+            if hasattr(opinion, 'cited_evidence'):
+                for citation in opinion.cited_evidence:
+                    # Check if citation exists in evidence
+                    found = False
+                    citation_str = str(citation)
+                    for loc in evidence_locations:
+                        if citation_str in loc or loc in citation_str:
+                            found = True
+                            break
+                    
+                    if not found:
+                        result['hallucinations'].append(f"{getattr(opinion, 'judge', 'Unknown')} cited '{citation_str}' but not found")
+                        result['hallucinating_judges'].append(getattr(opinion, 'judge', 'Unknown'))
         
         return result
     
@@ -240,8 +249,11 @@ This audit was conducted by a hierarchical swarm of forensic detectives and dial
             report += f"| **{data['name']}** | **{data['score']}** | {data['dissent'][:100]}... |\n"
         
         # Calculate overall
-        avg_score = sum(d['score'] for d in resolved_scores.values()) / len(resolved_scores)
-        report += f"\n**Overall Assessment Score:** {avg_score:.1f}/5.0\n\n"
+        if resolved_scores:
+            avg_score = sum(d['score'] for d in resolved_scores.values()) / len(resolved_scores)
+            report += f"\n**Overall Assessment Score:** {avg_score:.1f}/5.0\n\n"
+        else:
+            report += "\n**Overall Assessment Score:** N/A\n\n"
         
         # Dissent Summary
         report += "## The Dissent\n\n"
