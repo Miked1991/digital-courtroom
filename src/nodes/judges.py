@@ -10,11 +10,12 @@ from groq import Groq
 import os
 from pydantic import BaseModel, Field
 import logging
+from dotenv import load_dotenv
 
 from src.state import AgentState, JudicialOpinion, RubricDimension
 
 logger = logging.getLogger(__name__)
-
+load_dotenv()  # Load environment variables from .env file
 
 class JudgeOutput(BaseModel):
     """Structured output model for all judges"""
@@ -28,7 +29,7 @@ class Prosecutor:
     """The Critical Lens - 'Trust No One. Assume Vibe Coding.'"""
     
     def __init__(self, api_key: Optional[str] = None):
-        self.client = Groq(api_key=api_key or os.getenv('GROQ_API_KEY'))
+        self.client = Groq(api_key=api_key or os.environ.get("GROQ_API_KEY"))
         self.model = "llama-3.3-70b-versatile"
         
         # Distinct system prompt for Prosecutor
@@ -156,7 +157,7 @@ Remember: You are the PROSECUTOR. Finding flaws is your only job."""
             response = self.client.chat.completions.create(
                 model=self.model,
                 messages=[
-                    {"role": "system", "content": self.system_prompt},
+                    {"role": "system", "content": f"{self.system_prompt} in JSON format."},
                     {"role": "user", "content": user_prompt}
                 ],
                 temperature=0.1,  # Low temp for consistency
@@ -197,8 +198,8 @@ class Defense:
     """The Optimistic Lens - 'Reward Effort and Intent'"""
     
     def __init__(self, api_key: Optional[str] = None):
-        self.client = Groq(api_key=api_key or os.getenv('GROQ_API_KEY'))
-        self.model = "gemma2-9b-it"
+        self.client = Groq(api_key=api_key or os.environ.get("GROQ_API_KEY"))
+        self.model = "llama-3.3-70b-versatile"
         
         # Distinct system prompt for Defense
         self.system_prompt = """You are the DEFENSE ATTORNEY in a digital courtroom for code review.
@@ -320,7 +321,7 @@ Remember: You are the DEFENSE. Finding the good in their work is your only job."
             response = self.client.chat.completions.create(
                 model=self.model,
                 messages=[
-                    {"role": "system", "content": self.system_prompt},
+                    {"role": "system", "content": f"{self.system_prompt} in JSON format."},
                     {"role": "user", "content": user_prompt}
                 ],
                 temperature=0.2,
@@ -360,7 +361,7 @@ class TechLead:
     """The Pragmatic Lens - 'Does it actually work? Is it maintainable?'"""
     
     def __init__(self, api_key: Optional[str] = None):
-        self.client = Groq(api_key=api_key or os.getenv('GROQ_API_KEY'))
+        self.client = Groq(api_key=api_key or os.environ.get("GROQ_API_KEY"))
         self.model = "llama-3.3-70b-versatile"
         
         # Distinct system prompt for Tech Lead
@@ -508,7 +509,7 @@ Remember: You are the TECH LEAD. Be pragmatic and realistic about what actually 
             response = self.client.chat.completions.create(
                 model=self.model,
                 messages=[
-                    {"role": "system", "content": self.system_prompt},
+                    {"role": "system", "content": f"{self.system_prompt} in JSON format."},
                     {"role": "user", "content": user_prompt}
                 ],
                 temperature=0.1,
