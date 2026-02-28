@@ -1,16 +1,20 @@
 {
-  "start_time": "4d7e5466-bee9-4f1d-8d6b-176962d43e34",
+  "start_time": "5968f2d5-25a2-438b-8928-2880a4289f47",
   "evidence_counts": {},
   "opinion_counts": {},
   "evidence_aggregated": {
-    "git_clone": 1,
+    "git_history": 1,
+    "state_management": 2,
+    "graph_orchestration": 1,
+    "tool_safety": 1,
+    "structured_output": 1,
     "pdf_load": 1,
     "diagrams": 1
   },
-  "total_evidence": 3,
-  "aggregation_time": "a43cfb10-93bd-40d8-9209-16fa764eef29",
-  "timestamp": "2026-02-28T18:38:28.830466",
-  "total_opinions": 11,
-  "evidence_count": 3,
-  "criteria_resolved": 4
+  "total_evidence": 8,
+  "aggregation_time": "a6bab26e-20f2-4133-8919-7bade7bdf590",
+  "timestamp": "2026-03-01T00:29:42.209887",
+  "total_opinions": 27,
+  "evidence_count": 8,
+  "criteria_resolved": 10
 }

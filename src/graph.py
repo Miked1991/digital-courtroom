@@ -24,7 +24,7 @@ from src.nodes.justice import ChiefJustice
 class AutomatonAuditor:
     """Main orchestrator for the autonomous auditor swarm"""
     
-    def __init__(self, rubric_path: str = "ruberics\\week2_ruberic.json"):
+    def __init__(self, rubric_path: str = "ruberics/week2_ruberic.json"):
         self.rubric_path = rubric_path
         self.rubric = self._load_rubric()
         

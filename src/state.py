@@ -54,9 +54,10 @@ class RubricDimension(BaseModel):
     
     id: str
     name: str
-    target_artifact: Literal["github_repo", "pdf_report"]
-    forensic_instruction: str
-    judicial_logic: Dict[str, str]
+    target_artifact: Literal["github_repo", "pdf_report", "pdf_images"]
+    forensic_instruction:str
+    success_pattern:str
+    failure_pattern:str
     
     def __hash__(self):
         """Make RubricDimension hashable"""
