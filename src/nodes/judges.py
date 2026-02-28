@@ -29,7 +29,7 @@ class Prosecutor:
     
     def __init__(self, api_key: Optional[str] = None):
         self.client = Groq(api_key=api_key or os.getenv('GROQ_API_KEY'))
-        self.model = "gemma2-9b-it"
+        self.model = "llama-3.3-70b-versatile"
         
         # Distinct system prompt for Prosecutor
         self.system_prompt = """You are the PROSECUTOR in a digital courtroom for code review.
@@ -361,7 +361,7 @@ class TechLead:
     
     def __init__(self, api_key: Optional[str] = None):
         self.client = Groq(api_key=api_key or os.getenv('GROQ_API_KEY'))
-        self.model = "gemma2-9b-it"
+        self.model = "llama-3.3-70b-versatile"
         
         # Distinct system prompt for Tech Lead
         self.system_prompt = """You are the TECH LEAD in a digital courtroom for code review.

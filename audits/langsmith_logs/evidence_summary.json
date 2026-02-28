@@ -1,38 +1,38 @@
 {
   "git_clone": [
     {
-      "id": "c5513768-c93d-4b8e-95cf-21165d79dca9",
+      "id": "eb09f52b-4bbe-47b3-8303-2c1871c83bee",
       "goal": "Clone repository for analysis",
       "found": false,
       "content": "Clone failed: Cloning into '.'...\nfatal: repository 'https://github.com/Miked1991/digital-courtroom/tree/main/' not found\n",
       "location": "git clone operation",
       "rationale": "Repository clone failed - cannot proceed with code analysis",
       "confidence": 1.0,
-      "timestamp": "2026-02-28 15:45:33.374960"
+      "timestamp": "2026-02-28 16:04:29.359821"
     }
   ],
   "pdf_load": [
     {
-      "id": "82aa0ab5-010c-4e7e-b8ee-7ff245644f1f",
+      "id": "40f1f982-a08c-4197-8f16-deff8757e634",
       "goal": "Load PDF report for analysis",
       "found": false,
       "content": null,
       "location": "reports\\intrem_report.pdf",
       "rationale": "Failed to parse PDF file",
       "confidence": 1.0,
-      "timestamp": "2026-02-28 15:48:06.304744"
+      "timestamp": "2026-02-28 16:07:13.853828"
     }
   ],
   "diagrams": [
     {
-      "id": "a3d2ae43-c531-4667-ae52-4de46ec87cb9",
+      "id": "894c39b5-6ee2-4a0b-b512-537c93246329",
       "goal": "Analyze architectural diagrams",
       "found": false,
       "content": null,
       "location": "PDF Report",
       "rationale": "No images found in PDF for diagram analysis",
       "confidence": 1.0,
-      "timestamp": "2026-02-28 15:45:33.710066"
+      "timestamp": "2026-02-28 16:04:29.382453"
     }
   ]
 }
