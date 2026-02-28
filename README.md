@@ -44,7 +44,7 @@ pip install -r requirements.txt
 `------------------- configure environmental variable(.env) -------------------`
 #this process dependes on the provider we use 
 # Required
-GEMINAI_API_KEY=geminaiapi
+GROQ_API_KEY=geminaiapi
  
 
 # LangSmith Configuration
@@ -64,5 +64,35 @@ TEMP_DIR=/tmp/automaton-auditor
 LOG_LEVEL=INFO
 
 
+#project structure
+
+automaton-auditor/
+├── src/
+│   ├── graph.py              # Main LangGraph orchestration
+│   ├── state.py              # Pydantic state models
+│   ├── nodes/
+│   │   ├── detectives.py     # Forensic evidence collectors
+│   │   ├── judges.py         # Dialectical judges with rate limiting
+│   │   └── justice.py        # Chief Justice synthesis
+│   ├── tools/
+│   │   ├── repo_tools.py      # Sandboxed git operations
+│   │   ├── ast_tools.py      # AST parsing utilities
+│   │   ├── doc_tools.py      # PDF analysis (PyMuPDF)
+│   │   └── vision_tools.py   # Diagram analysis
+│   └── config/
+│       └── prompts.py        # Centralized prompt management
+├── rubric/
+│   └── week2_rubric.json     # Machine-readable grading rubric
+├── audits/
+│   ├── report_onself_generated/   # Your self-audit reports
+│   ├── report_onpeer_generated/   # Audits of peers
+│   ├── report_bypeer_received/    # Reports from peers
+│   └── langsmith_logs/            # Execution traces
+├── main.py                   # CLI entry point
+├── run_audit.py              # Interactive runner
+├── .env.example              # Environment variables template
+├── requirements.txt          # Production dependencies     
+├── Dockerfile                # Container configuration
+└── README.md                 # This file
 
 ----------------------//------------------------
