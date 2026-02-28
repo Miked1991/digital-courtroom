@@ -1,96 +1,96 @@
 {
   "git_history": [
     {
-      "id": "b3e34b05-e83f-4c7a-97b9-a5e778e4587e",
+      "id": "db3ebd13-d02e-4f49-8fa2-06691789d647",
       "goal": "Analyze commit history for development patterns",
       "found": true,
-      "content": "[\n  {\n    \"hash\": \"3395e83\",\n    \"message\": \"updated the judge based on the output obtained from llm and fixed some api issues using request rate limmiter mechanizems\",\n    \"timestamp\": \"2026-03-01T00:49:23\",\n    \"author\": \"Mikias Dagem\"\n  }\n]",
+      "content": "[\n  {\n    \"hash\": \"fbaaa34\",\n    \"message\": \"readme,pyproject.toml,uvlock and dockerfile updted\",\n    \"timestamp\": \"2026-03-01T01:58:25\",\n    \"author\": \"Mikias Dagem\"\n  }\n]",
       "location": "git log",
       "rationale": "Found 1 commits showing development progression",
       "confidence": 0.7,
-      "timestamp": "2026-03-01 00:51:07.445721"
+      "timestamp": "2026-03-01 02:08:09.077618"
     }
   ],
   "state_management": [
     {
-      "id": "6c3d2cd1-1c49-41cd-9183-1a9079f6371e",
+      "id": "424d534a-aeb8-4812-9251-90bba3009242",
       "goal": "Verify Pydantic state models",
       "found": true,
       "content": "Found models: ['Evidence', 'JudicialOpinion', 'RubricDimension', 'SynthesisRule']",
       "location": "src\\state.py",
       "rationale": "Found Pydantic models in src\\state.py",
       "confidence": 0.9,
-      "timestamp": "2026-03-01 00:51:07.469658"
+      "timestamp": "2026-03-01 02:08:09.087593"
     },
     {
-      "id": "097ecdeb-1e16-494c-bf66-6888e7e88c22",
+      "id": "d096dc4b-9173-4f24-ba11-5019ea38cd30",
       "goal": "Verify Pydantic state models",
       "found": false,
       "content": "Found models: []",
       "location": "src\\graph.py",
       "rationale": "No Pydantic models in src\\graph.py",
       "confidence": 0.8,
-      "timestamp": "2026-03-01 00:51:07.488607"
+      "timestamp": "2026-03-01 02:08:09.113529"
     }
   ],
   "graph_orchestration": [
     {
-      "id": "8e294394-dbfa-44b7-b53f-6afd6b3ce318",
+      "id": "d65a4fda-2dec-4d1c-a248-9c7dbded4bf1",
       "goal": "Analyze graph orchestration for parallelism",
       "found": true,
       "content": "{\n  \"has_stategraph\": true,\n  \"nodes\": [],\n  \"edges\": [\n    {\n      \"from\": \"START\",\n      \"to\": \"'repo_investigator'\",\n      \"line\": 67\n    },\n    {\n      \"from\": \"'repo_investigator'\",\n      \"to\": \"'doc_analyst'\",\n      \"line\": 71\n    },\n    {\n      \"from\": \"'repo_investigator'\",\n      \"to\": \"'vision_inspector'\",\n      \"line\": 72\n    },\n    {\n      \"from\": \"'doc_analyst'\",\n      \"to\": \"'evidence_aggregator'\",\n      \"line\": 75\n    },\n    {\n      \"from\": \"'vision_inspector'\",\n      \"to\": \"'evidence_aggregator'\",\n      \"line\": 76\n    },\n    {\n      \"from\": \"'evidence_aggregator'\",\n      \"to\": \"'prosecutor'\",\n      \"line\": 80\n    },\n    {\n      \"from\": \"'evidence_aggregator'\",\n      \"to\": \"'defense'\",\n      \"line\": 81\n    },\n    {\n      \"from\": \"'evidence_aggregator'\",\n      \"to\": \"'tech_lead'\",\n      \"line\": 82\n    },\n    {\n      \"from\": \"'prosecutor'\",\n      \"to\": \"'chief_justice'\",\n      \"line\": 85\n    },\n    {\n      \"from\": \"'defense'\",\n      \"to\": \"'chief_justice'\",\n      \"line\": 86\n    },\n    {\n      \"from\": \"'tech_lead'\",\n      \"to\": \"'chief_justice'\",\n      \"line\": 87\n    },\n    {\n      \"from\": \"'chief_justice'\",\n      \"to\": \"END\",\n      \"line\": 90\n    }\n  ],\n  \"parallel_patterns\": [\n    \"conditional\",\n    \"conditional\",\n    \"fan-out\"\n  ],\n  \"linear\": false\n}",
       "location": "src\\graph.py",
       "rationale": "Graph has StateGraph. Parallel patterns: ['conditional', 'conditional', 'fan-out']",
       "confidence": 0.85,
-      "timestamp": "2026-03-01 00:51:07.495588"
+      "timestamp": "2026-03-01 02:08:09.120505"
     }
   ],
   "tool_safety": [
     {
-      "id": "3043613c-7f88-4dfb-b1e6-7821c2522700",
+      "id": "6185321b-7713-4551-ab2f-bc2f80cf23b9",
       "goal": "Verify sandboxed tool execution",
       "found": true,
       "content": "No unsafe system calls detected",
       "location": "src/tools/",
       "rationale": "All tools appear to use safe practices",
       "confidence": 0.9,
-      "timestamp": "2026-03-01 00:51:07.497583"
+      "timestamp": "2026-03-01 02:08:09.123496"
     }
   ],
   "structured_output": [
     {
-      "id": "6ce3d009-4945-4889-9cc0-67608114ca9a",
+      "id": "adaefc30-1795-439c-a917-bb9ae628819b",
       "goal": "Verify structured JSON output enforcement",
       "found": false,
       "content": null,
       "location": "src/nodes/judges.py",
       "rationale": "No .with_structured_output() or .bind_tools() calls detected",
       "confidence": 0.85,
-      "timestamp": "2026-03-01 00:51:07.557422"
+      "timestamp": "2026-03-01 02:08:09.172365"
     }
   ],
   "pdf_load": [
     {
-      "id": "74aff58c-2448-4f40-bf56-7859593ba449",
+      "id": "9239fc85-636f-4218-a397-870b1fcc87e0",
       "goal": "Load PDF report for analysis",
       "found": false,
       "content": null,
       "location": "reports\\intrem_report.pdf",
       "rationale": "Failed to parse PDF file",
       "confidence": 1.0,
-      "timestamp": "2026-03-01 00:54:54.676752"
+      "timestamp": "2026-03-01 02:10:58.971437"
     }
   ],
   "diagrams": [
     {
-      "id": "76403961-c74f-4f9c-8b0f-937790c23446",
+      "id": "56193668-8cfa-484d-bce9-90ab67552b3a",
       "goal": "Analyze architectural diagrams",
       "found": false,
       "content": null,
       "location": "PDF Report",
       "rationale": "No images found in PDF for diagram analysis",
       "confidence": 1.0,
-      "timestamp": "2026-03-01 00:51:07.601308"
+      "timestamp": "2026-03-01 02:08:09.220237"
     }
   ]
 }

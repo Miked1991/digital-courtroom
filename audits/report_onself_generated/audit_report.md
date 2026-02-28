@@ -1,5 +1,5 @@
 # Automaton Auditor Final Verdict
-**Generated:** 2026-03-01 00:59:54 UTC
+**Generated:** 2026-03-01 02:15:58 UTC
 **Repository:** https://github.com/Miked1991/digital-courtroom
 **Report:** reports\intrem_report.pdf
 
@@ -9,80 +9,80 @@ This audit was conducted by a hierarchical swarm of forensic detectives and dial
 
 | Criterion | Score (1-5) | Dialectical Outcome |
 |-----------|--------------|---------------------|
-| **Git Forensic Analysis** | **3** | FACT SUPREMACY: Defense claimed Defense cited 'src\tools/' but not found but evidence doesn't suppor... |
-| **State Management Rigor** | **4** | Judicial consensus: Scores within 1 point(s).... |
-| **Graph Orchestration Architecture** | **3** | FACT SUPREMACY: Defense claimed Defense cited 'src\tools\' but not found but evidence doesn't suppor... |
-| **Safe Tool Engineering** | **3** | FACT SUPREMACY: Defense claimed Defense cited 'src/state.py' but not found but evidence doesn't supp... |
-| **Structured Output Enforcement** | **4** | Judicial consensus: Scores within 1 point(s).... |
-| **Judicial Nuance and Dialectics** | **3** | FACT SUPREMACY: Defense claimed Defense cited 'src/state.py' but not found but evidence doesn't supp... |
-| **Chief Justice Synthesis Engine** | **4** | Balanced dialectic: Prosecutor (4), Defense (5), Tech Lead (3) synthesized.... |
-| **Theoretical Depth (Documentation)** | **3** | FACT SUPREMACY: Defense claimed Defense cited 'src/state.py' but not found but evidence doesn't supp... |
-| **Report Accuracy (Cross-Reference)** | **3** | FACT SUPREMACY: Defense claimed Defense cited 'src\tools\' but not found but evidence doesn't suppor... |
-| **Architectural Diagram Analysis** | **4** | Judicial consensus: Scores within 1 point(s).... |
+| **Git Forensic Analysis** | **3** | FACT SUPREMACY: Defense claimed Defense cited 'src/state.py' but not found but evidence doesn't supp... |
+| **State Management Rigor** | **3** | FACT SUPREMACY: Defense claimed Defense cited 'src/state.py' but not found but evidence doesn't supp... |
+| **Graph Orchestration Architecture** | **3** | FACT SUPREMACY: Defense claimed Defense cited 'srcgraph.py' but not found but evidence doesn't suppo... |
+| **Safe Tool Engineering** | **3** | FACT SUPREMACY: Defense claimed Defense cited 'srcstate.py' but not found but evidence doesn't suppo... |
+| **Structured Output Enforcement** | **3** | FACT SUPREMACY: Defense claimed Defense cited 'src\nodes\judges.py' but not found but evidence doesn... |
+| **Judicial Nuance and Dialectics** | **3** | FACT SUPREMACY: Defense claimed Defense cited 'src\tools/' but not found but evidence doesn't suppor... |
+| **Chief Justice Synthesis Engine** | **3** | FACT SUPREMACY: Defense claimed Defense cited 'src\tools/' but not found but evidence doesn't suppor... |
+| **Theoretical Depth (Documentation)** | **3** | FACT SUPREMACY: Defense claimed Defense cited 'src\tools/' but not found but evidence doesn't suppor... |
+| **Report Accuracy (Cross-Reference)** | **3** | FACT SUPREMACY: Defense claimed Defense cited 'src/state.py' but not found but evidence doesn't supp... |
+| **Architectural Diagram Analysis** | **3** | FACT SUPREMACY: Defense claimed Defense cited 'srcstate.py' but not found but evidence doesn't suppo... |
 
-**Overall Assessment Score:** 3.4/5.0
+**Overall Assessment Score:** 3.0/5.0
 
 ## The Dissent
 
 The following dialectical tensions were recorded:
 
-1. FACT SUPREMACY: Defense claimed Defense cited 'src\tools/' but not found but evidence doesn't support it.
-2. Judicial consensus: Scores within 1 point(s).
-3. FACT SUPREMACY: Defense claimed Defense cited 'src\tools\' but not found but evidence doesn't support it.
-4. FACT SUPREMACY: Defense claimed Defense cited 'src/state.py' but not found but evidence doesn't support it.
-5. Judicial consensus: Scores within 1 point(s).
+1. FACT SUPREMACY: Defense claimed Defense cited 'src/state.py' but not found but evidence doesn't support it.
+2. FACT SUPREMACY: Defense claimed Defense cited 'src/state.py' but not found but evidence doesn't support it.
+3. FACT SUPREMACY: Defense claimed Defense cited 'srcgraph.py' but not found but evidence doesn't support it.
+4. FACT SUPREMACY: Defense claimed Defense cited 'srcstate.py' but not found but evidence doesn't support it.
+5. FACT SUPREMACY: Defense claimed Defense cited 'src\nodes\judges.py' but not found but evidence doesn't support it.
 
 ## Criterion Breakdown
 
 ### Git Forensic Analysis
 **Final Score:** 3/5
 
-**Dialectical Resolution:** FACT SUPREMACY: Defense claimed Defense cited 'src\tools/' but not found but evidence doesn't support it.
+**Dialectical Resolution:** FACT SUPREMACY: Defense claimed Defense cited 'src/state.py' but not found but evidence doesn't support it.
 
 ### State Management Rigor
-**Final Score:** 4/5
+**Final Score:** 3/5
 
-**Dialectical Resolution:** Judicial consensus: Scores within 1 point(s).
+**Dialectical Resolution:** FACT SUPREMACY: Defense claimed Defense cited 'src/state.py' but not found but evidence doesn't support it.
 
 ### Graph Orchestration Architecture
 **Final Score:** 3/5
 
-**Dialectical Resolution:** FACT SUPREMACY: Defense claimed Defense cited 'src\tools\' but not found but evidence doesn't support it.
+**Dialectical Resolution:** FACT SUPREMACY: Defense claimed Defense cited 'srcgraph.py' but not found but evidence doesn't support it.
 
 ### Safe Tool Engineering
 **Final Score:** 3/5
 
-**Dialectical Resolution:** FACT SUPREMACY: Defense claimed Defense cited 'src/state.py' but not found but evidence doesn't support it.
+**Dialectical Resolution:** FACT SUPREMACY: Defense claimed Defense cited 'srcstate.py' but not found but evidence doesn't support it.
 
 ### Structured Output Enforcement
-**Final Score:** 4/5
+**Final Score:** 3/5
 
-**Dialectical Resolution:** Judicial consensus: Scores within 1 point(s).
+**Dialectical Resolution:** FACT SUPREMACY: Defense claimed Defense cited 'src\nodes\judges.py' but not found but evidence doesn't support it.
 
 ### Judicial Nuance and Dialectics
 **Final Score:** 3/5
 
-**Dialectical Resolution:** FACT SUPREMACY: Defense claimed Defense cited 'src/state.py' but not found but evidence doesn't support it.
+**Dialectical Resolution:** FACT SUPREMACY: Defense claimed Defense cited 'src\tools/' but not found but evidence doesn't support it.
 
 ### Chief Justice Synthesis Engine
-**Final Score:** 4/5
+**Final Score:** 3/5
 
-**Dialectical Resolution:** Balanced dialectic: Prosecutor (4), Defense (5), Tech Lead (3) synthesized.
+**Dialectical Resolution:** FACT SUPREMACY: Defense claimed Defense cited 'src\tools/' but not found but evidence doesn't support it.
 
 ### Theoretical Depth (Documentation)
 **Final Score:** 3/5
 
-**Dialectical Resolution:** FACT SUPREMACY: Defense claimed Defense cited 'src/state.py' but not found but evidence doesn't support it.
+**Dialectical Resolution:** FACT SUPREMACY: Defense claimed Defense cited 'src\tools/' but not found but evidence doesn't support it.
 
 ### Report Accuracy (Cross-Reference)
 **Final Score:** 3/5
 
-**Dialectical Resolution:** FACT SUPREMACY: Defense claimed Defense cited 'src\tools\' but not found but evidence doesn't support it.
+**Dialectical Resolution:** FACT SUPREMACY: Defense claimed Defense cited 'src/state.py' but not found but evidence doesn't support it.
 
 ### Architectural Diagram Analysis
-**Final Score:** 4/5
+**Final Score:** 3/5
 
-**Dialectical Resolution:** Judicial consensus: Scores within 1 point(s).
+**Dialectical Resolution:** FACT SUPREMACY: Defense claimed Defense cited 'srcstate.py' but not found but evidence doesn't support it.
 
 ## Remediation Plan
 
