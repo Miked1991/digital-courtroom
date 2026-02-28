@@ -5,11 +5,14 @@ Implements parallel detectives, fan-in aggregation, parallel judges, and synthes
 
 import os
 import json
-from typing import Dict, List, Any
+import uuid
+from typing import Dict, List, Any, Optional, Literal
 from pathlib import Path
+import operator
 
-from langgraph.graph import StateGraph, END
-from langgraph.checkpoint import MemorySaver
+from langgraph.graph import START, StateGraph, END
+from langgraph.checkpoint.memory import MemorySaver
+#from langgraph.constants import START
 
 from src.state import AgentState, RubricDimension, SynthesisRule
 from src.nodes.detectives import RepoInvestigator, DocAnalyst, VisionInspector
@@ -40,11 +43,11 @@ class AutomatonAuditor:
     
     def _load_rubric(self) -> Dict:
         """Load machine-readable rubric"""
-        with open(self.rubric_path, 'r') as f:
+        with open(self.rubric_path, 'r', encoding='utf-8') as f:
             return json.load(f)
     
     def _build_graph(self) -> StateGraph:
-        """Construct the hierarchical state graph"""
+        """Construct the hierarchical state graph with proper parallel execution"""
         
         # Initialize graph with our state
         builder = StateGraph(AgentState)
@@ -59,57 +62,42 @@ class AutomatonAuditor:
         builder.add_node("tech_lead", self.tech_lead)
         builder.add_node("chief_justice", self.chief_justice)
         
-        # Set entry point
-        builder.set_entry_point("repo_investigator")
+        # Set entry point to START
+        builder.add_edge(START, "repo_investigator")
         
-        # Parallel detectives - fan-out from entry
+        # Define edges
         builder.add_edge("repo_investigator", "doc_analyst")
         builder.add_edge("repo_investigator", "vision_inspector")
         
-        # Fan-in to aggregator
         builder.add_edge("doc_analyst", "evidence_aggregator")
         builder.add_edge("vision_inspector", "evidence_aggregator")
         
-        # Aggregator to parallel judges
         builder.add_edge("evidence_aggregator", "prosecutor")
         builder.add_edge("evidence_aggregator", "defense")
         builder.add_edge("evidence_aggregator", "tech_lead")
         
-        # Judges to chief justice (fan-in)
         builder.add_edge("prosecutor", "chief_justice")
         builder.add_edge("defense", "chief_justice")
         builder.add_edge("tech_lead", "chief_justice")
         
-        # End after chief justice
         builder.add_edge("chief_justice", END)
-        
-        # Add conditional edges for error handling
-        builder.add_conditional_edges(
-            "repo_investigator",
-            self._check_clone_success,
-            {
-                "continue": "doc_analyst",
-                "error": END
-            }
-        )
         
         # Compile with memory for state persistence
         memory = MemorySaver()
         return builder.compile(checkpointer=memory)
     
     def _aggregate_evidence(self, state: AgentState) -> Dict[str, Any]:
-        """Synchronization node - aggregates evidence from all detectives"""
-        # Just pass through - state already merged via reducers
-        # This node exists for graph clarity and potential validation
-        return {}
-    
-    def _check_clone_success(self, state: AgentState) -> str:
-        """Check if repo clone was successful"""
-        if 'git_clone' in state['evidences']:
-            for evidence in state['evidences']['git_clone']:
-                if not evidence.found:
-                    return "error"
-        return "continue"
+        """Synchronization node - aggregates evidence from all detectives."""
+        # Count evidence types for metadata
+        evidence_counts = {
+            key: len(value) for key, value in state['evidences'].items()
+        }
+        
+        # Update execution metadata
+        metadata = state.get('execution_metadata', {})
+        metadata['evidence_aggregated'] = evidence_counts
+        
+        return {"execution_metadata": metadata}
     
     def prepare_initial_state(self, repo_url: str, pdf_path: str) -> AgentState:
         """Prepare initial state with rubric and rules"""
@@ -133,16 +121,21 @@ class AutomatonAuditor:
             "opinions": [],
             "final_report": "",
             "error_log": [],
-            "execution_metadata": {}
+            "execution_metadata": {
+                "start_time": str(uuid.uuid4()),
+                "evidence_counts": {},
+                "opinion_counts": {}
+            }
         }
     
-    def run(self, repo_url: str, pdf_path: str) -> Dict[str, Any]:
+    def run(self, repo_url: str, pdf_path: str, thread_id: Optional[str] = None) -> Dict[str, Any]:
         """
         Execute the full audit pipeline
         
         Args:
             repo_url: GitHub repository URL to audit
             pdf_path: Path to PDF report file
+            thread_id: Optional thread ID for checkpointing
         
         Returns:
             Final state with complete audit report
@@ -150,14 +143,40 @@ class AutomatonAuditor:
         
         # Prepare initial state
         initial_state = self.prepare_initial_state(repo_url, pdf_path)
-        #config = {"configurable": {"thread_id": "audit_session_001"}}
-        # Run graph
-        final_state = self.graph.invoke(initial_state)
         
-        # Save reports
-        self._save_reports(final_state)
+        # Generate thread_id if not provided
+        if thread_id is None:
+            thread_id = str(uuid.uuid4())
         
-        return final_state
+        # Create config with proper structure - ENSURE 'configurable' key exists
+        config = {
+            "configurable": {
+                "thread_id": thread_id
+            }
+        }
+        
+        try:
+            # Run graph with config - use the config dictionary
+            final_state = self.graph.invoke(initial_state, config=config)
+            
+            # Save reports
+            self._save_reports(final_state)
+            
+            return final_state
+            
+        except Exception as e:
+            print(f"Error during graph execution: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            
+            # Save error state for debugging
+            error_state = {
+                **initial_state,
+                "error_log": [f"Execution error: {str(e)}"],
+                "final_report": f"# Audit Failed\n\nError: {str(e)}\n\n```\n{traceback.format_exc()}\n```"
+            }
+            self._save_reports(error_state)
+            raise
     
     def _save_reports(self, state: AgentState):
         """Save audit reports to disk"""
@@ -168,19 +187,22 @@ class AutomatonAuditor:
         
         # Save main report
         report_path = "audits/report_onself_generated/audit_report.md"
-        with open(report_path, 'w') as f:
-            f.write(state['final_report'])
+        with open(report_path, 'w', encoding='utf-8') as f:
+            f.write(state.get('final_report', '# No report generated'))
         
         # Save execution metadata
         metadata_path = "audits/langsmith_logs/execution_metadata.json"
-        with open(metadata_path, 'w') as f:
-            json.dump(state['execution_metadata'], f, indent=2, default=str)
+        with open(metadata_path, 'w', encoding='utf-8') as f:
+            json.dump(state.get('execution_metadata', {}), f, indent=2, default=str)
         
         # Save evidence summary
         evidence_path = "audits/langsmith_logs/evidence_summary.json"
-        evidence_summary = {
-            key: [e.model_dump() for e in ev_list]
-            for key, ev_list in state['evidences'].items()
-        }
-        with open(evidence_path, 'w') as f:
+        evidence_summary = {}
+        for key, ev_list in state.get('evidences', {}).items():
+            try:
+                evidence_summary[key] = [e.model_dump() for e in ev_list]
+            except:
+                evidence_summary[key] = [str(e) for e in ev_list]
+        
+        with open(evidence_path, 'w', encoding='utf-8') as f:
             json.dump(evidence_summary, f, indent=2, default=str)

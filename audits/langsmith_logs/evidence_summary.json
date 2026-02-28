@@ -1,0 +1,35 @@
+{
+  "git_clone": [
+    {
+      "goal": "Clone repository for analysis",
+      "found": false,
+      "content": "Only GitHub URLs are supported for security",
+      "location": "git clone operation",
+      "rationale": "Repository clone failed - cannot proceed with code analysis",
+      "confidence": 1.0,
+      "timestamp": "2026-02-28 14:15:06.273286"
+    }
+  ],
+  "pdf_load": [
+    {
+      "goal": "Load PDF report for analysis",
+      "found": false,
+      "content": null,
+      "location": "reports\\intrem_report.pdf",
+      "rationale": "Failed to parse PDF file",
+      "confidence": 1.0,
+      "timestamp": "2026-02-28 14:17:35.912912"
+    }
+  ],
+  "diagrams": [
+    {
+      "goal": "Analyze architectural diagrams",
+      "found": false,
+      "content": null,
+      "location": "PDF Report",
+      "rationale": "No images found in PDF for diagram analysis",
+      "confidence": 1.0,
+      "timestamp": "2026-02-28 14:15:06.295228"
+    }
+  ]
+}

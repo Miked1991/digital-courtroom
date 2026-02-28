@@ -1,10 +1,10 @@
 # Core LangGraph and LangChain
-langgraph>=0.0.20,<0.1.0
-langchain>=0.1.0,<0.2.0
-langchain-core>=0.1.0,<0.2.0
-langchain-community>=0.0.10,<0.1.0
-langsmith>=0.0.50,<0.1.0
-
+langgraph>=0.2.59
+langchain>=0.3.0
+langchain-core>=0.3.0
+langchain-community>=0.3.0
+langsmith>=0.1.147
+hf_xet>=1.0.0
 # LLM Provider - Groq
 groq>=0.4.0,<0.5.0
 
@@ -60,3 +60,7 @@ black>=23.0.0,<24.0.0
 ruff>=0.1.0,<0.2.0
 mypy>=1.0.0,<2.0.0
 pre-commit>=3.0.0,<4.0.0
+
+# interactive terminal features
+questionary==2.0.1
+rich==13.7.0

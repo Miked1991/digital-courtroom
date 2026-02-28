@@ -1,0 +1,14 @@
+{
+  "start_time": "87911a6c-79a3-4eba-897c-c219199c568c",
+  "evidence_counts": {},
+  "opinion_counts": {},
+  "evidence_aggregated": {
+    "git_clone": 1,
+    "pdf_load": 1,
+    "diagrams": 1
+  },
+  "timestamp": "2026-02-28T14:17:37.328549",
+  "total_opinions": 11,
+  "evidence_count": 3,
+  "criteria_resolved": 4
+}
