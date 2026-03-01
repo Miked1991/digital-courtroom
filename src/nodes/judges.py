@@ -378,15 +378,15 @@ class ModelFallbackManager:
         self.model_tiers = {
             'primary': [
                 'llama-3.1-8b-instant',  # Fast, efficient
-                'gpt-oss-120b',     # More capable fallback
-                'qwen/qwen3-32b'             # Additional fallback
+                'qwen3-32b',     # More capable fallback
+                'qwen3-32b'             # Additional fallback
             ],
             'fast': [
                 'llama-3.1-8b-instant',
-                'gpt-oss-120b'
+                'qwen3-32b'
             ],
             'capable': [
-                'gpt-oss-120b',
+                'qwen3-32b',
                 'llama-3.1-8b-instant'
             ]
         }

@@ -1,96 +1,96 @@
 {
   "git_history": [
     {
-      "id": "db3ebd13-d02e-4f49-8fa2-06691789d647",
+      "id": "3b94b85f-51d9-4772-85d6-423b9bccd7eb",
       "goal": "Analyze commit history for development patterns",
       "found": true,
-      "content": "[\n  {\n    \"hash\": \"fbaaa34\",\n    \"message\": \"readme,pyproject.toml,uvlock and dockerfile updted\",\n    \"timestamp\": \"2026-03-01T01:58:25\",\n    \"author\": \"Mikias Dagem\"\n  }\n]",
+      "content": "[\n  {\n    \"hash\": \"9875cf5\",\n    \"message\": \"final report added\",\n    \"timestamp\": \"2026-03-01T02:18:26\",\n    \"author\": \"Mikias Dagem\"\n  }\n]",
       "location": "git log",
       "rationale": "Found 1 commits showing development progression",
       "confidence": 0.7,
-      "timestamp": "2026-03-01 02:08:09.077618"
+      "timestamp": "2026-03-01 03:13:38.941888"
     }
   ],
   "state_management": [
     {
-      "id": "424d534a-aeb8-4812-9251-90bba3009242",
+      "id": "3a864863-8f52-4c10-8afb-2b895fa07d56",
       "goal": "Verify Pydantic state models",
       "found": true,
       "content": "Found models: ['Evidence', 'JudicialOpinion', 'RubricDimension', 'SynthesisRule']",
       "location": "src\\state.py",
       "rationale": "Found Pydantic models in src\\state.py",
       "confidence": 0.9,
-      "timestamp": "2026-03-01 02:08:09.087593"
+      "timestamp": "2026-03-01 03:13:38.952857"
     },
     {
-      "id": "d096dc4b-9173-4f24-ba11-5019ea38cd30",
+      "id": "cf57cbd2-9de1-4ad5-b855-7da1fcbd4898",
       "goal": "Verify Pydantic state models",
       "found": false,
       "content": "Found models: []",
       "location": "src\\graph.py",
       "rationale": "No Pydantic models in src\\graph.py",
       "confidence": 0.8,
-      "timestamp": "2026-03-01 02:08:09.113529"
+      "timestamp": "2026-03-01 03:13:38.976794"
     }
   ],
   "graph_orchestration": [
     {
-      "id": "d65a4fda-2dec-4d1c-a248-9c7dbded4bf1",
+      "id": "91ca8592-c0c0-4883-a9f7-fe81aea44e86",
       "goal": "Analyze graph orchestration for parallelism",
       "found": true,
       "content": "{\n  \"has_stategraph\": true,\n  \"nodes\": [],\n  \"edges\": [\n    {\n      \"from\": \"START\",\n      \"to\": \"'repo_investigator'\",\n      \"line\": 67\n    },\n    {\n      \"from\": \"'repo_investigator'\",\n      \"to\": \"'doc_analyst'\",\n      \"line\": 71\n    },\n    {\n      \"from\": \"'repo_investigator'\",\n      \"to\": \"'vision_inspector'\",\n      \"line\": 72\n    },\n    {\n      \"from\": \"'doc_analyst'\",\n      \"to\": \"'evidence_aggregator'\",\n      \"line\": 75\n    },\n    {\n      \"from\": \"'vision_inspector'\",\n      \"to\": \"'evidence_aggregator'\",\n      \"line\": 76\n    },\n    {\n      \"from\": \"'evidence_aggregator'\",\n      \"to\": \"'prosecutor'\",\n      \"line\": 80\n    },\n    {\n      \"from\": \"'evidence_aggregator'\",\n      \"to\": \"'defense'\",\n      \"line\": 81\n    },\n    {\n      \"from\": \"'evidence_aggregator'\",\n      \"to\": \"'tech_lead'\",\n      \"line\": 82\n    },\n    {\n      \"from\": \"'prosecutor'\",\n      \"to\": \"'chief_justice'\",\n      \"line\": 85\n    },\n    {\n      \"from\": \"'defense'\",\n      \"to\": \"'chief_justice'\",\n      \"line\": 86\n    },\n    {\n      \"from\": \"'tech_lead'\",\n      \"to\": \"'chief_justice'\",\n      \"line\": 87\n    },\n    {\n      \"from\": \"'chief_justice'\",\n      \"to\": \"END\",\n      \"line\": 90\n    }\n  ],\n  \"parallel_patterns\": [\n    \"conditional\",\n    \"conditional\",\n    \"fan-out\"\n  ],\n  \"linear\": false\n}",
       "location": "src\\graph.py",
       "rationale": "Graph has StateGraph. Parallel patterns: ['conditional', 'conditional', 'fan-out']",
       "confidence": 0.85,
-      "timestamp": "2026-03-01 02:08:09.120505"
+      "timestamp": "2026-03-01 03:13:38.990757"
     }
   ],
   "tool_safety": [
     {
-      "id": "6185321b-7713-4551-ab2f-bc2f80cf23b9",
+      "id": "e52c4603-e615-4f86-8f92-5db2c92227dc",
       "goal": "Verify sandboxed tool execution",
       "found": true,
       "content": "No unsafe system calls detected",
       "location": "src/tools/",
       "rationale": "All tools appear to use safe practices",
       "confidence": 0.9,
-      "timestamp": "2026-03-01 02:08:09.123496"
+      "timestamp": "2026-03-01 03:13:38.994746"
     }
   ],
   "structured_output": [
     {
-      "id": "adaefc30-1795-439c-a917-bb9ae628819b",
+      "id": "4176d668-583f-4e36-83c1-8c69150da009",
       "goal": "Verify structured JSON output enforcement",
       "found": false,
       "content": null,
       "location": "src/nodes/judges.py",
       "rationale": "No .with_structured_output() or .bind_tools() calls detected",
       "confidence": 0.85,
-      "timestamp": "2026-03-01 02:08:09.172365"
+      "timestamp": "2026-03-01 03:13:39.045609"
     }
   ],
   "pdf_load": [
     {
-      "id": "9239fc85-636f-4218-a397-870b1fcc87e0",
+      "id": "eb079d59-34c8-4991-a512-75ddede64f0a",
       "goal": "Load PDF report for analysis",
       "found": false,
       "content": null,
-      "location": "reports\\intrem_report.pdf",
+      "location": "reports\\Final_ Report.pdf",
       "rationale": "Failed to parse PDF file",
       "confidence": 1.0,
-      "timestamp": "2026-03-01 02:10:58.971437"
+      "timestamp": "2026-03-01 03:14:25.221879"
     }
   ],
   "diagrams": [
     {
-      "id": "56193668-8cfa-484d-bce9-90ab67552b3a",
+      "id": "46f3cd4e-f7b2-4c0f-b905-37135892408e",
       "goal": "Analyze architectural diagrams",
       "found": false,
       "content": null,
       "location": "PDF Report",
       "rationale": "No images found in PDF for diagram analysis",
       "confidence": 1.0,
-      "timestamp": "2026-03-01 02:08:09.220237"
+      "timestamp": "2026-03-01 03:13:39.091487"
     }
   ]
 }

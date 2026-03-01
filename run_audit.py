@@ -142,14 +142,14 @@ class AuditManager:
                 progress.update(task, advance=1)
                 
                 # Generate report filename
-                report_filename = f"self_audit_{timestamp}.md"
+                report_filename = f"self_audit_{str(timestamp)}.md"
                 report_path = self.self_audit_dir / report_filename
                 
                 # Save report with metadata
                 self._save_audit_report(result, report_path, {
                     "type": "self",
                     "repo": repo_url,
-                    "timestamp": timestamp,
+                    "timestamp": str(timestamp),
                     "thread_id": thread_id
                 })
                 
@@ -187,7 +187,7 @@ class AuditManager:
                 progress.update(task, advance=1)
                 
                 # Generate report filename
-                report_filename = f"peer_{peer_name}_audit_{timestamp}.md"
+                report_filename = f"peer_{peer_name}_audit_{str(timestamp)}.md"
                 report_path = self.peer_audit_dir / report_filename
                 
                 # Save report with metadata
@@ -195,7 +195,7 @@ class AuditManager:
                     "type": "peer",
                     "peer": peer_name,
                     "repo": repo_url,
-                    "timestamp": timestamp,
+                    "timestamp": str(timestamp),
                     "thread_id": thread_id
                 })
                 
