@@ -44,7 +44,7 @@ pip install -r requirements.txt
 `------------------- configure environmental variable(.env) -------------------`
 #this process dependes on the provider we use 
 # Required
-GROQ_API_KEY=geminaiapi
+GROQ_API_KEY=groqapikey
  
 
 # LangSmith Configuration
