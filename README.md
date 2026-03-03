@@ -6,8 +6,8 @@
 
 - Python 3.10 or higher
 - Git
-- OpenAI API key (or Anthropic)
-- (Optional) LangSmith API key for tracing
+- GROQ API KEY 
+- LangSmith API key for tracing
 
 ---
 
