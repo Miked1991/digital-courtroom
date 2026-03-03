@@ -54,8 +54,8 @@ LANGCHAIN_API_KEY=langchainapi
 LANGCHAIN_PROJECT=automaton-auditor
 
 # Default Model Configuration
-DEFAULT_LLM_MODEL=gemini-3-pro-preview
-VISION_LLM_MODEL=gemini-2.5-flash-image
+DEFAULT_LLM_MODEL=lallma- qwen 
+VISION_LLM_MODEL=lallma- instant 
 
 # Temporary Directory for Cloning
 TEMP_DIR=/tmp/automaton-auditor
